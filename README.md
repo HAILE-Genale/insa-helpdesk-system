@@ -1,163 +1,195 @@
-# 🎧 INSA Helpdesk System — Collaborator Guidelines & Workflow
+# 🔰 Beginner's Guide: INSA Helpdesk System
 
-Welcome to the **INSA Helpdesk System** repository! This document serves as the official guide for all team members and collaborators. Please read these guidelines carefully before contributing.
+Welcome to the **INSA Helpdesk System** repository! If you are new to Git and GitHub, **don't worry at all**! This guide is written step-by-step specifically for complete beginners.
 
 ---
 
-## 📌 1. Project Overview & Architecture
+## 💡 Quick Intro: What are Git & GitHub?
 
-The repository is structured as a monorepo containing two main projects:
+- **Git** is a tool installed on your computer that saves snapshots (history) of your code. Think of it like "Save Points" in a video game so you never lose your work.
+- **GitHub** is a website (like Google Drive or OneDrive) where we store our project online so our team can work together safely without overwriting each other's code.
 
-```
+---
+
+## 🏗️ 1. Understanding the Project Structure
+
+This project is divided into two main parts:
+
+```text
 insa-helpdesk-system/
-├── helpdesk-backend/     # Spring Boot (Java) REST API service
-├── helpdesk-frontend/    # Next.js / React (JavaScript + Tailwind CSS) client app
-├── .gitignore            # Root git ignore file
-└── README.md             # Collaborator guide & documentation
+├── ⚙️ helpdesk-backend/    # Backend (Java / Spring Boot) — Handles database & server logic
+└── 🎨 helpdesk-frontend/   # Frontend (Next.js / React)   — Handles user interface & screens
 ```
 
 ---
 
-## 🌿 2. Branching Strategy
+## 🛠️ 2. First-Time Setup (Do This Once)
 
-To keep the repository clean and stable, we follow a feature-branch workflow:
+### Step 1: Install Required Tools
+Before you start, make sure you have installed these free tools on your computer:
+1. **[Git](https://git-scm.com/downloads)** (Download and run the installer with default settings)
+2. **[Node.js (v18+)](https://nodejs.org/)** (Required to run the Frontend)
+3. **[Java JDK 17+](https://adoptium.net/)** (Required to run the Backend)
+4. **[VS Code](https://code.visualstudio.com/)** (Recommended code editor)
 
-| Branch Name | Purpose | Direct Push Allowed? |
-| :--- | :--- | :---: |
-| `main` | Production release-ready code | ❌ **NO** |
-| `dev` | Integration & testing branch | ❌ **NO** (Merge via PR) |
-| `feature/<name>` | Developing a new feature (e.g., `feature/ticket-management`) | ✅ **YES** (Push to your branch) |
-| `fix/<name>` | Fixing a bug (e.g., `fix/auth-cors-issue`) | ✅ **YES** (Push to your branch) |
-| `refactor/<name>`| Code cleanup/refactoring (e.g., `refactor/user-service`) | ✅ **YES** (Push to your branch) |
-| `docs/<name>` | Documentation updates (e.g., `docs/update-readme`) | ✅ **YES** (Push to your branch) |
+### Step 2: Set Up Your Identity in Git
+Open your terminal (or Command Prompt / Git Bash) and run these two commands (use your real name and email address associated with GitHub):
 
-> ⚠️ **CRITICAL RULE**: **NEVER push code directly to `main` or `dev`**. All changes must be pushed to a feature/fix branch and merged via a **Pull Request (PR)**.
+```bash
+git config --global user.name "Your Full Name"
+git config --global user.email "your.email@example.com"
+```
+
+### Step 3: Clone (Download) the Project to Your Computer
+1. Open Terminal or VS Code Terminal.
+2. Run this command to download the codebase to your computer:
+   ```bash
+   git clone https://github.com/HAILE-Genale/insa-helpdesk-system.git
+   ```
+3. Enter the project folder:
+   ```bash
+   cd insa-helpdesk-system
+   ```
 
 ---
 
-## 📤 3. Step-by-Step Guide: How to Work and Push
+## 🏃 3. How to Run the Project Locally
 
-### Step 1: Clone & Get the Latest Code
-Before starting any work, switch to `dev` (or `main`) and pull the latest changes:
+### Running the Backend (Java / Spring Boot)
+1. Open terminal and navigate to the backend folder:
+   ```bash
+   cd helpdesk-backend
+   ```
+2. Start the backend application:
+   - On Windows (PowerShell/CMD):
+     ```bash
+     .\mvnw spring-boot:run
+     ```
+   - If Maven is installed globally:
+     ```bash
+     mvn spring-boot:run
+     ```
+3. Your server will start running at `http://localhost:8080`!
+
+---
+
+### Running the Frontend (Next.js / React)
+1. Open a **NEW terminal window** and navigate to the frontend folder:
+   ```bash
+   cd helpdesk-frontend
+   ```
+2. Install required packages (only needed the first time):
+   ```bash
+   npm install
+   ```
+3. Start the frontend client:
+   ```bash
+   npm run dev
+   ```
+4. Open your browser and go to `http://localhost:3000` to view the application!
+
+---
+
+## 🌿 4. Git Rules: Branches Explained Simply
+
+Think of `main` and `dev` as the **master copies** of a building design.
+- ❌ **NEVER write code directly on `main` or `dev`** (Doing this can break the working application).
+- ✅ **ALWAYS create your own personal copy (called a "Branch")** to work safely.
+
+| Branch Type | Purpose | Example Name |
+| :--- | :--- | :--- |
+| `feature/<name>` | Adding a new page or capability | `feature/login-screen` |
+| `fix/<name>` | Fixing a bug or mistake | `fix/button-click-bug` |
+| `docs/<name>` | Adding or updating documentation | `docs/update-readme` |
+
+---
+
+## 🔄 5. Daily Step-by-Step Workflow (How to Work & Push)
+
+Follow these **6 simple steps** every time you work on a task:
+
+### Step 1: Get the Latest Code First
+Before starting new work, switch to `dev` and pull the latest code downloaded by your teammates:
 ```bash
 git checkout dev
 git pull origin dev
 ```
 
-### Step 2: Create a New Feature or Bugfix Branch
-Always work on a separate branch named appropriately:
+### Step 2: Create Your Own Safe Branch
+Create and switch to a new branch for your task:
 ```bash
-# For a feature:
-git checkout -b feature/ticket-creation
-
-# For a bug fix:
-git checkout -b fix/login-validation
+git checkout -b feature/your-task-name
 ```
+*(Replace `your-task-name` with what you are working on, e.g., `feature/ticket-form`)*
 
-### Step 3: Develop & Test Locally
-Make your changes and verify that your code works locally:
-- **Backend:** Test your Spring Boot endpoints.
-- **Frontend:** Test Next.js pages and component interactions.
+### Step 3: Write Your Code & Test It
+Write your code in VS Code. Run the project locally to make sure everything works without errors.
 
-### Step 4: Check Git Status & Stage Changes
+### Step 4: Check & Stage Your Changes
+Check which files you modified:
 ```bash
-# Check modified and new files
 git status
-
-# Add specific files (avoid using `git add .` blindly!)
-git add helpdesk-frontend/src/components/TicketForm.jsx
 ```
-
-### Step 5: Commit with Clear Messages
-Write meaningful commit messages (see [Commit Guidelines](#-6-commit-message-guidelines)):
+Stage your changes (prepare them to be saved):
 ```bash
-git commit -m "feat(frontend): add ticket creation form component"
+git add .
 ```
 
-### Step 6: Push Your Branch to GitHub
-Push your working branch to the remote repository:
+### Step 5: Save (Commit) Your Changes with a Message
+Save a snapshot of your work with a brief message describing what you built:
 ```bash
-git push -u origin feature/ticket-creation
+git commit -m "feat: added user ticket submission form"
 ```
 
-### Step 7: Create a Pull Request (PR)
-1. Go to the repository on GitHub.
-2. Click **New Pull Request**.
-3. Select **Target Branch**: `dev` (or `main` if `dev` is not created yet).
-4. Select **Source Branch**: `feature/ticket-creation`.
-5. Add a concise title and description explaining what was changed.
-6. Request at least **1 team member** to review your PR.
-7. Merge only after approval and test checks pass.
+### Step 6: Upload (Push) Your Branch to GitHub
+Send your branch up to GitHub online:
+```bash
+git push -u origin feature/your-task-name
+```
 
 ---
 
-## ✅ 4. What Collaborators SHOULD Do (DO's)
+## 📩 6. How to Submit Your Code (Pull Request / PR)
 
-- ✅ **DO pull latest changes** regularly from the target branch before making commits to avoid merge conflicts.
-- ✅ **DO follow naming conventions** for branches (`feature/...`, `fix/...`, `docs/...`).
-- ✅ **DO test your code** (both backend and frontend) locally before pushing.
-- ✅ **DO keep Pull Requests small and focused** on a single feature or bug fix.
-- ✅ **DO write descriptive commit messages** that explain *what* and *why*.
-- ✅ **DO create/update documentation** if you add new APIs or configuration settings.
-- ✅ **DO keep secrets safe**: Store API keys, passwords, and tokens in `.env.local` or environment variables—never in tracked git files.
+After pushing your branch, you need to submit your code so the team lead can review and add it to `dev`.
 
----
-
-## ❌ 5. What Collaborators SHOULD NOT Do (DON'Ts)
-
-- ❌ **DO NOT push directly to `main` or `dev` branches**.
-- ❌ **DO NOT commit sensitive information** (passwords, JWT secrets, database URIs, API keys).
-- ❌ **DO NOT commit generated files or dependencies**:
-  - `node_modules/`
-  - `target/`
-  - `.next/`
-  - `.env` / `.env.local`
-  - IDE settings (`.vscode/`, `.idea/`)
-- ❌ **DO NOT merge your own Pull Request** without team review or approval.
-- ❌ **DO NOT force push (`git push --force` or `git push -f`)** to shared branches (`main` or `dev`).
-- ❌ **DO NOT make massive commits** combining unrelated features (e.g. changing frontend styling and backend database models in one giant commit).
+1. Go to the project website on **[GitHub](https://github.com/HAILE-Genale/insa-helpdesk-system)**.
+2. You will see a yellow banner with a button saying **"Compare & pull request"**. Click it!
+3. **Base Branch:** Select `dev`.
+4. **Compare Branch:** Select your branch (`feature/your-task-name`).
+5. Write a simple title and brief description of what you completed.
+6. Click **"Create pull request"**.
+7. Notify your team lead or teammate to review and approve your work! 🎉
 
 ---
 
-## 💬 6. Commit Message Guidelines
+## 🚫 7. Golden Rules (Do's and Don'ts for Beginners)
 
-We follow **Conventional Commits**. Please format your commit messages like this:
+### ✅ DO:
+- ✅ Always pull the latest code (`git pull origin dev`) before starting your work.
+- ✅ Create a new branch for every new feature or bug fix.
+- ✅ Ask for help from team members whenever you get stuck!
 
-`<type>(<scope>): <short summary>`
-
-### Allowed Types:
-- `feat`: A new feature (e.g., `feat(backend): add authentication controller`)
-- `fix`: A bug fix (e.g., `fix(frontend): resolve button alignment issue`)
-- `docs`: Documentation changes (e.g., `docs(readme): add collaborator workflow`)
-- `style`: Formatting, missing semi-colons, no code logic change (e.g., `style(frontend): format JSX code`)
-- `refactor`: Restructuring code without changing functionality (e.g., `refactor(backend): optimize user service query`)
-- `test`: Adding or updating tests (e.g., `test(backend): add unit tests for ticket service`)
-- `chore`: Maintenance tasks, dependency updates (e.g., `chore: update pom.xml dependencies`)
+### ❌ DON'T:
+- ❌ **NEVER push directly to `main` or `dev` branches**.
+- ❌ **NEVER commit passwords, API keys, or secret tokens** into your code files.
+- ❌ **NEVER modify or delete other people's branches**.
 
 ---
 
-## 🚀 7. Local Setup Quickstart
+## 📖 8. Mini Git Dictionary (Key Terms Made Easy)
 
-### Backend Setup (`helpdesk-backend`)
-- **Prerequisites:** Java 17+, Maven 3.8+
-- **Run Locally:**
-  ```bash
-  cd helpdesk-backend
-  mvn spring-boot:run
-  ```
-  *(Runs by default on `http://localhost:8080`)*
-
-### Frontend Setup (`helpdesk-frontend`)
-- **Prerequisites:** Node.js 18+ & npm
-- **Run Locally:**
-  ```bash
-  cd helpdesk-frontend
-  npm install
-  npm run dev
-  ```
-  *(Runs by default on `http://localhost:3000`)*
+| Term | What it Means |
+| :--- | :--- |
+| **Repository (Repo)** | The complete project folder stored on GitHub. |
+| **Clone** | Downloading a copy of the online project to your computer. |
+| **Branch** | Your personal, isolated working area to write code safely. |
+| **Commit** | A saved checkpoint/snapshot of your changes with a note. |
+| **Push** | Uploading your local commits from your computer to GitHub. |
+| **Pull** | Downloading new changes from GitHub to your computer. |
+| **Pull Request (PR)** | Requesting team leaders to review and merge your code into `dev`. |
 
 ---
 
-## 🤝 Need Help?
-If you run into issues with git, merge conflicts, or local setup, post a message in the team chat or contact the project maintainer before making drastic git resets!
+## 🆘 Need Help?
+If you run into an unexpected error, git conflict, or get stuck, **don't panic!** Git is designed so that your code can always be recovered. Reach out to your team lead or post in the team group chat, and we will help you step-by-step! 🚀
