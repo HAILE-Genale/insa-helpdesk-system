@@ -32,4 +32,23 @@ public class User {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean active = true;
+
+    @Column(updatable = false)
+    private java.time.OffsetDateTime createdAt;
+
+    private java.time.OffsetDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = java.time.OffsetDateTime.now();
+        updatedAt = createdAt;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = java.time.OffsetDateTime.now();
+    }
 }

@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/insa_helpdesk
-    username: postgres
-    password: 4neverever
+    url: jdbc:postgresql://localhost:5432/insa_helpdesk_v2
+    username: helpdesk_user
+    password: helpdesk_8001
     driver-class-name: org.postgresql.Driver
 
   jpa:
