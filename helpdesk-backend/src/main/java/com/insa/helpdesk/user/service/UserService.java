@@ -8,6 +8,7 @@ import com.insa.helpdesk.user.dto.UserResponseDto;
 import com.insa.helpdesk.user.entity.Role;
 import com.insa.helpdesk.user.entity.User;
 import com.insa.helpdesk.user.repository.UserRepository;
+import com.insa.helpdesk.user.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,6 +25,7 @@ public class UserService {
     // a constructor taking all of these, in this order, automatically.
     // You never write the constructor yourself.
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -36,11 +38,14 @@ public class UserService {
             throw new IllegalArgumentException("Email already registered");
         }
 
+        Role role = roleRepository.findByName(request.getRole().toUpperCase())
+                .orElseThrow(() -> new IllegalArgumentException("Unknown role: " + request.getRole()));
+
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .role(Role.valueOf(request.getRole().toUpperCase()))
+                .role(role)
                 .active(true)
                 .build();
 
@@ -80,7 +85,7 @@ public class UserService {
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
-                .role(user.getRole().name())
+                .role(user.getRole().getName())
                 .build();
     }
 }
