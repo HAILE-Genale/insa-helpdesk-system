@@ -1,61 +1,47 @@
 package com.insa.helpdesk.Category;
 
+import com.insa.helpdesk.dto.CategoryRequestDTO;
+import com.insa.helpdesk.dto.CategoryResponseDTO;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
 
 @RestController
 @RequestMapping("/category")
 public class CategoryController {
 
-
     private final CategoryService categoryService;
 
-
     public CategoryController(CategoryService categoryService) {
-
         this.categoryService = categoryService;
-
     }
-
-
 
     @PostMapping
-    public Category createCategory(@RequestBody Category category) {
+    public ResponseEntity<CategoryResponseDTO> createCategory(
+            @RequestBody CategoryRequestDTO dto) {
 
-        return categoryService.createCategory(category);
-
+        return ResponseEntity.ok(categoryService.createCategory(dto));
     }
-
-
 
     @GetMapping
-    public List<Category> getCategories() {
-
-        return categoryService.getCategories();
-
+    public ResponseEntity<List<Category>> getCategories() {
+        return ResponseEntity.ok(categoryService.getCategories());
     }
-
-
 
     @PutMapping("/{id}")
-    public Category updateCategory(
+    public ResponseEntity<Category> updateCategory(
             @PathVariable Long id,
-            @RequestBody Category category
-    ) {
+            @RequestBody Category category) {
 
-        return categoryService.updateCategory(id, category);
-
+        return ResponseEntity.ok(categoryService.updateCategory(id, category));
     }
 
-
-
     @DeleteMapping("/{id}")
-    public void deleteCategory(@PathVariable Long id) {
+    public ResponseEntity<String> deleteCategory(@PathVariable Long id) {
 
         categoryService.deleteCategory(id);
 
+        return ResponseEntity.ok("Category deleted successfully.");
     }
-
 }
