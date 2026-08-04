@@ -26,4 +26,7 @@ public class CreateUserRequest {
 
     @NotBlank
     private String role;
+
+    private String phone;
+    private String location;
 }
