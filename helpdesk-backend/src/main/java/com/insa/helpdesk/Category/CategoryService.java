@@ -29,6 +29,12 @@ public class CategoryService {
         category.setDescription(dto.getDescription());
         category.setActive(dto.getActive() != null ? dto.getActive() : true);
 
+        if (dto.getParentCategoryId() != null) {
+            Category parentCategory = categoryRepo.findById(dto.getParentCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Parent category not found"));
+            category.setParentCategory(parentCategory);
+        }
+
         if (dto.getClassificationId() != null) {
             Classification classification = classificationRepo.findById(dto.getClassificationId())
                     .orElseThrow(() -> new RuntimeException("Classification not found"));
@@ -46,10 +52,24 @@ public class CategoryService {
                 .collect(Collectors.toList());
     }
 
+    public List<CategoryResponseDTO> getParentCategories() {
+        return categoryRepo.findByParentCategoryIsNull().stream()
+                .map(this::mapToResponseWithHierarchy)
+                .collect(Collectors.toList());
+    }
+
     public CategoryResponseDTO updateCategory(Long id, CategoryRequestDTO dto) {
 
         Category existingCategory = categoryRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Category not found"));
+
+        if (dto.getParentCategoryId() != null) {
+            Category parentCategory = categoryRepo.findById(dto.getParentCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Parent category not found"));
+            existingCategory.setParentCategory(parentCategory);
+        } else {
+            existingCategory.setParentCategory(null);
+        }
 
         if (dto.getClassificationId() != null) {
             Classification classification = classificationRepo.findById(dto.getClassificationId())
@@ -83,9 +103,29 @@ public class CategoryService {
         dto.setDescription(category.getDescription());
         dto.setActive(category.getActive());
 
+        if (category.getParentCategory() != null) {
+            dto.setParentCategoryId(category.getParentCategory().getId());
+            dto.setParentCategoryName(category.getParentCategory().getName());
+        }
+
         if (category.getClassification() != null) {
             dto.setClassificationId(category.getClassification().getId());
             dto.setClassificationName(category.getClassification().getName());
+        }
+
+        return dto;
+    }
+
+    private CategoryResponseDTO mapToResponseWithHierarchy(Category category) {
+
+        CategoryResponseDTO dto = mapToResponse(category);
+
+        if (category.getSubCategories() != null && !category.getSubCategories().isEmpty()) {
+            List<CategoryResponseDTO> subCategoryDtos = category.getSubCategories().stream()
+                    .filter(Category::getActive)
+                    .map(this::mapToResponse)
+                    .collect(Collectors.toList());
+            dto.setSubCategories(subCategoryDtos);
         }
 
         return dto;

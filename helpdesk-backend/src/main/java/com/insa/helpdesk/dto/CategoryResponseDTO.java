@@ -1,5 +1,7 @@
 package com.insa.helpdesk.dto;
 
+import java.util.List;
+
 public class CategoryResponseDTO {
 
     private Long id;
@@ -8,6 +10,9 @@ public class CategoryResponseDTO {
     private Boolean active;
     private Long classificationId;
     private String classificationName;
+    private Long parentCategoryId;
+    private String parentCategoryName;
+    private List<CategoryResponseDTO> subCategories;
 
     public CategoryResponseDTO() {
     }
@@ -58,5 +63,29 @@ public class CategoryResponseDTO {
 
     public void setClassificationName(String classificationName) {
         this.classificationName = classificationName;
+    }
+
+    public Long getParentCategoryId() {
+        return parentCategoryId;
+    }
+
+    public void setParentCategoryId(Long parentCategoryId) {
+        this.parentCategoryId = parentCategoryId;
+    }
+
+    public String getParentCategoryName() {
+        return parentCategoryName;
+    }
+
+    public void setParentCategoryName(String parentCategoryName) {
+        this.parentCategoryName = parentCategoryName;
+    }
+
+    public List<CategoryResponseDTO> getSubCategories() {
+        return subCategories;
+    }
+
+    public void setSubCategories(List<CategoryResponseDTO> subCategories) {
+        this.subCategories = subCategories;
     }
 }

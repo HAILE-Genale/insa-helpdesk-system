@@ -29,6 +29,11 @@ public class CategoryController {
         return ResponseEntity.ok(categoryService.getCategories());
     }
 
+    @GetMapping("/hierarchy")
+    public ResponseEntity<List<CategoryResponseDTO>> getCategoriesHierarchy() {
+        return ResponseEntity.ok(categoryService.getParentCategories());
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<CategoryResponseDTO> updateCategory(
             @PathVariable Long id,

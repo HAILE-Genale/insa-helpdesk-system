@@ -6,6 +6,7 @@ public class CategoryRequestDTO {
     private String description;
     private Boolean active;
     private Long classificationId;
+    private Long parentCategoryId;
 
     public CategoryRequestDTO() {
     }
@@ -40,5 +41,13 @@ public class CategoryRequestDTO {
 
     public void setClassificationId(Long classificationId) {
         this.classificationId = classificationId;
+    }
+
+    public Long getParentCategoryId() {
+        return parentCategoryId;
+    }
+
+    public void setParentCategoryId(Long parentCategoryId) {
+        this.parentCategoryId = parentCategoryId;
     }
 }
