@@ -5,16 +5,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.OffsetDateTime;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserResponseDto {
+public class ActivityLogResponseDto {
     private Long id;
     private String username;
-    private String email;
-    private String role;
-    private String phone;
-    private String location;
-    private boolean active;
+    private String action;
+    private String detail;
+    private OffsetDateTime createdAt;
 }

@@ -1,5 +1,6 @@
 package com.insa.helpdesk.user.dto;
 
+import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,12 +10,11 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserResponseDto {
-    private Long id;
-    private String username;
+public class UpdateUserRequest {
+
+    @Email
     private String email;
-    private String role;
+
     private String phone;
     private String location;
-    private boolean active;
 }
