@@ -6,6 +6,7 @@ public class CategoryResponseDTO {
     private String name;
     private String description;
     private Boolean active;
+    private Long classificationId;
     private String classificationName;
 
     public CategoryResponseDTO() {
@@ -41,6 +42,14 @@ public class CategoryResponseDTO {
 
     public void setActive(Boolean active) {
         this.active = active;
+    }
+
+    public Long getClassificationId() {
+        return classificationId;
+    }
+
+    public void setClassificationId(Long classificationId) {
+        this.classificationId = classificationId;
     }
 
     public String getClassificationName() {

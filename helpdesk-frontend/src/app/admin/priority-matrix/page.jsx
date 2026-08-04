@@ -1,121 +1,134 @@
-'use client';
+'use client'
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import React, { useEffect, useState, useCallback } from 'react'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import {
   fetchPriorityMatrix,
   updatePriorityMatrix,
   calculatePriority,
   Impact,
-  Urgency,
-} from '@/lib/api/priority';
+  Urgency
+} from '@/lib/api/priority'
 
 const IMPACT_LABELS = {
   HIGH: 'High Impact (Entire Org)',
   MEDIUM: 'Medium Impact (Dept)',
-  LOW: 'Low Impact (Single User)',
-};
+  LOW: 'Low Impact (Single User)'
+}
 
-const URGENCY_ORDER = [Urgency.HIGH, Urgency.MEDIUM, Urgency.LOW];
-const IMPACT_ORDER = [Impact.HIGH, Impact.MEDIUM, Impact.LOW];
+const URGENCY_ORDER = [Urgency.HIGH, Urgency.MEDIUM, Urgency.LOW]
+const IMPACT_ORDER = [Impact.HIGH, Impact.MEDIUM, Impact.LOW]
 
 const PRIORITY_STYLES = {
   CRITICAL: 'bg-rose-600 text-white border-rose-600',
   HIGH: 'bg-rose-100 text-rose-900 border-rose-300',
   MEDIUM: 'bg-amber-100 text-amber-900 border-amber-300',
-  LOW: 'bg-slate-100 text-slate-700 border-slate-200',
-};
+  LOW: 'bg-slate-100 text-slate-700 border-slate-200'
+}
 
-const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
 
 export default function AdminPriorityMatrixPage() {
-  const [matrix, setMatrix] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState(null);
-  const [error, setError] = useState(null);
+  const [matrix, setMatrix] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState(null)
+  const [error, setError] = useState(null)
 
   // Demo calculation state
-  const [demoImpact, setDemoImpact] = useState(Impact.HIGH);
-  const [demoUrgency, setDemoUrgency] = useState(Urgency.HIGH);
-  const [demoResult, setDemoResult] = useState(null);
+  const [demoImpact, setDemoImpact] = useState(Impact.HIGH)
+  const [demoUrgency, setDemoUrgency] = useState(Urgency.HIGH)
+  const [demoResult, setDemoResult] = useState(null)
 
-  const key = (impact, urgency) => `${impact}/${urgency}`;
+  const key = (impact, urgency) => `${impact}/${urgency}`
+
+  const buildDefaultMatrix = () => {
+    const values = {}
+    IMPACT_ORDER.forEach((impact) => {
+      URGENCY_ORDER.forEach((urgency) => {
+        values[key(impact, urgency)] = PRIORITY_OPTIONS[0]
+      })
+    })
+    return values
+  }
 
   const loadMatrix = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
     try {
-      const rows = await fetchPriorityMatrix();
-      const byKey = {};
+      const rows = await fetchPriorityMatrix()
+      const byKey = buildDefaultMatrix()
       rows.forEach((r) => {
-        byKey[key(r.impact, r.urgency)] = r.resultingPriority;
-      });
-      setMatrix(byKey);
+        byKey[key(r.impact, r.urgency)] = r.resultingPriority
+      })
+      setMatrix(byKey)
     } catch (err) {
-      setError('Could not load the priority matrix from the API.');
-      console.error(err);
+      setError('Could not load the priority matrix from the API.')
+      console.error(err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, []);
+  }, [])
 
   useEffect(() => {
-    loadMatrix();
-  }, [loadMatrix]);
+    loadMatrix()
+  }, [loadMatrix])
 
   const setCell = (impact, urgency, value) => {
-    setMatrix((prev) => ({ ...prev, [key(impact, urgency)]: value }));
-  };
+    setMatrix((prev) => ({ ...prev, [key(impact, urgency)]: value }))
+  }
 
   const handleSave = async () => {
-    setSaving(true);
-    setMessage(null);
-    setError(null);
+    setSaving(true)
+    setMessage(null)
+    setError(null)
     try {
       const rows = IMPACT_ORDER.flatMap((impact) =>
         URGENCY_ORDER.map((urgency) => ({
           impact,
           urgency,
-          resultingPriority: matrix[key(impact, urgency)],
+          resultingPriority: matrix[key(impact, urgency)] ?? PRIORITY_OPTIONS[0]
         }))
-      );
-      await updatePriorityMatrix(rows);
-      setMessage('Priority matrix saved.');
+      )
+
+      await updatePriorityMatrix(rows)
+      setMessage('Priority matrix saved.')
     } catch (err) {
-      setError('Failed to save the priority matrix.');
-      console.error(err);
+      setError(err?.message || 'Failed to save the priority matrix.')
+      console.error(err)
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
   const handleReset = () => {
-    setDemoResult(null);
-    setMessage(null);
-    loadMatrix();
-  };
+    setDemoResult(null)
+    setMessage(null)
+    loadMatrix()
+  }
 
   const handleCalculate = async () => {
-    setError(null);
-    setDemoResult(null);
+    setError(null)
+    setDemoResult(null)
     try {
-      const result = await calculatePriority(demoImpact, demoUrgency);
-      setDemoResult(result);
+      const result = await calculatePriority(demoImpact, demoUrgency)
+      setDemoResult(result)
     } catch (err) {
-      setError('Could not calculate priority.');
-      console.error(err);
+      setError('Could not calculate priority.')
+      console.error(err)
     }
-  };
+  }
 
   return (
     <>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">ITIL Priority Matrix</h1>
+        <h1 className="text-2xl font-bold text-slate-900">
+          ITIL Priority Matrix
+        </h1>
         <p className="text-xs text-slate-500 mt-1">
-          Automatic priority calculation based on organizational Impact vs Urgency. Click a
-          cell to change it, then Save.
+          Automatic priority calculation based on organizational Impact vs
+          Urgency. Click a cell to change it, then Save.
         </p>
       </div>
 
@@ -136,7 +149,9 @@ export default function AdminPriorityMatrixPage() {
             <div className="text-sm text-slate-500">Loading matrix…</div>
           ) : (
             <div className="grid grid-cols-4 gap-3 text-center text-xs font-bold">
-              <div className="p-3 bg-slate-100 rounded-xl">Impact / Urgency</div>
+              <div className="p-3 bg-slate-100 rounded-xl">
+                Impact / Urgency
+              </div>
               {URGENCY_ORDER.map((urgency) => (
                 <div key={urgency} className="p-3 bg-slate-100 rounded-xl">
                   {urgency} Urgency
@@ -149,13 +164,17 @@ export default function AdminPriorityMatrixPage() {
                     {IMPACT_LABELS[impact]}
                   </div>
                   {URGENCY_ORDER.map((urgency) => {
-                    const value = matrix[key(impact, urgency)] || '—';
-                    const style = PRIORITY_STYLES[value] || PRIORITY_STYLES.MEDIUM;
+                    const value =
+                      matrix[key(impact, urgency)] ?? PRIORITY_OPTIONS[0]
+                    const style =
+                      PRIORITY_STYLES[value] || PRIORITY_STYLES.MEDIUM
                     return (
                       <select
                         key={urgency}
                         value={value}
-                        onChange={(e) => setCell(impact, urgency, e.target.value)}
+                        onChange={(e) =>
+                          setCell(impact, urgency, e.target.value)
+                        }
                         className={`p-2 rounded-xl border text-center font-bold cursor-pointer appearance-none ${style}`}
                         aria-label={`${IMPACT_LABELS[impact]} / ${urgency} urgency`}
                       >
@@ -165,7 +184,7 @@ export default function AdminPriorityMatrixPage() {
                           </option>
                         ))}
                       </select>
-                    );
+                    )
                   })}
                 </React.Fragment>
               ))}
@@ -190,7 +209,9 @@ export default function AdminPriorityMatrixPage() {
         <CardContent className="p-6">
           <div className="flex flex-wrap items-end gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Impact</label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
+                Impact
+              </label>
               <select
                 value={demoImpact}
                 onChange={(e) => setDemoImpact(e.target.value)}
@@ -204,7 +225,9 @@ export default function AdminPriorityMatrixPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Urgency</label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
+                Urgency
+              </label>
               <select
                 value={demoUrgency}
                 onChange={(e) => setDemoUrgency(e.target.value)}
@@ -221,7 +244,9 @@ export default function AdminPriorityMatrixPage() {
               Calculate
             </Button>
             {demoResult && (
-              <span className={`px-3 py-1.5 rounded-xl border text-sm font-bold ${PRIORITY_STYLES[demoResult]}`}>
+              <span
+                className={`px-3 py-1.5 rounded-xl border text-sm font-bold ${PRIORITY_STYLES[demoResult]}`}
+              >
                 {demoResult}
               </span>
             )}
@@ -229,5 +254,5 @@ export default function AdminPriorityMatrixPage() {
         </CardContent>
       </Card>
     </>
-  );
+  )
 }

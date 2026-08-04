@@ -7,6 +7,7 @@ import com.insa.helpdesk.dto.CategoryResponseDTO;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class CategoryService {
@@ -23,35 +24,46 @@ public class CategoryService {
 
     public CategoryResponseDTO createCategory(CategoryRequestDTO dto) {
 
-        Classification classification = classificationRepo.findById(dto.getClassificationId())
-                .orElseThrow(() -> new RuntimeException("Classification not found"));
-
         Category category = new Category();
         category.setName(dto.getName());
         category.setDescription(dto.getDescription());
-        category.setActive(dto.getActive());
-        category.setClassification(classification);
+        category.setActive(dto.getActive() != null ? dto.getActive() : true);
+
+        if (dto.getClassificationId() != null) {
+            Classification classification = classificationRepo.findById(dto.getClassificationId())
+                    .orElseThrow(() -> new RuntimeException("Classification not found"));
+            category.setClassification(classification);
+        }
 
         Category saved = categoryRepo.save(category);
 
         return mapToResponse(saved);
     }
 
-    public List<Category> getCategories() {
-        return categoryRepo.findAll();
+    public List<CategoryResponseDTO> getCategories() {
+        return categoryRepo.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
-    public Category updateCategory(Long id, Category category) {
+    public CategoryResponseDTO updateCategory(Long id, CategoryRequestDTO dto) {
 
         Category existingCategory = categoryRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Category not found"));
 
-        existingCategory.setName(category.getName());
-        existingCategory.setDescription(category.getDescription());
-        existingCategory.setActive(category.getActive());
-        existingCategory.setClassification(category.getClassification());
+        if (dto.getClassificationId() != null) {
+            Classification classification = classificationRepo.findById(dto.getClassificationId())
+                    .orElseThrow(() -> new RuntimeException("Classification not found"));
+            existingCategory.setClassification(classification);
+        } else {
+            existingCategory.setClassification(null);
+        }
 
-        return categoryRepo.save(existingCategory);
+        existingCategory.setName(dto.getName());
+        existingCategory.setDescription(dto.getDescription());
+        existingCategory.setActive(dto.getActive() != null ? dto.getActive() : existingCategory.getActive());
+
+        return mapToResponse(categoryRepo.save(existingCategory));
     }
 
     public void deleteCategory(Long id) {
@@ -72,6 +84,7 @@ public class CategoryService {
         dto.setActive(category.getActive());
 
         if (category.getClassification() != null) {
+            dto.setClassificationId(category.getClassification().getId());
             dto.setClassificationName(category.getClassification().getName());
         }
 

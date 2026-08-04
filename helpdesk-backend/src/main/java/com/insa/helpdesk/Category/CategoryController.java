@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/category")
+@RequestMapping({"/categories", "/category"})
 public class CategoryController {
 
     private final CategoryService categoryService;
@@ -25,16 +25,16 @@ public class CategoryController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Category>> getCategories() {
+    public ResponseEntity<List<CategoryResponseDTO>> getCategories() {
         return ResponseEntity.ok(categoryService.getCategories());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Category> updateCategory(
+    public ResponseEntity<CategoryResponseDTO> updateCategory(
             @PathVariable Long id,
-            @RequestBody Category category) {
+            @RequestBody CategoryRequestDTO dto) {
 
-        return ResponseEntity.ok(categoryService.updateCategory(id, category));
+        return ResponseEntity.ok(categoryService.updateCategory(id, dto));
     }
 
     @DeleteMapping("/{id}")
