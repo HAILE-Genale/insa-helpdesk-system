@@ -25,11 +25,51 @@ public class User {
     @Column(nullable = false)
     private String passwordHash;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id", nullable = false)
+    private Role role;
+
+    public enum AuthSource {
+        LOCAL, LDAP
+    }
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Role role;
+    @Builder.Default
+    private AuthSource authSource = AuthSource.LOCAL;
+
+    @Column
+    private String ldapDn;
+
+    @Column
+    private String phone;
+
+    @Column
+    private String location;
+
+    @Column
+    private java.time.OffsetDateTime lastLoginAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean active = true;
+
+    @Column(updatable = false)
+    private java.time.OffsetDateTime createdAt;
+
+    private java.time.OffsetDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = java.time.OffsetDateTime.now();
+        updatedAt = createdAt;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = java.time.OffsetDateTime.now();
+    }
 }

@@ -1,73 +1,22 @@
 /**
- * INSA Helpdesk — Demo Auth Accounts
- * In production this would be replaced by real API calls.
+ * INSA Helpdesk — Real Auth (backed by Spring Boot API)
  */
 
-export const DEMO_ACCOUNTS = [
-  {
-    id:         'USR-001',
-    name:       'Haile Genale',
-    email:      'haile@insa.gov.et',
-    password:   'admin123',
-    role:       'admin',
-    department: 'IT Infrastructure',
-    avatar:     'HG',
-    homeRoute:  '/admin/users',
-  },
-  {
-    id:         'USR-002',
-    name:       'Abebe Bikila',
-    email:      'abebe@insa.gov.et',
-    password:   'agent123',
-    role:       'agent',
-    department: 'Network Operations (NOC)',
-    avatar:     'AB',
-    homeRoute:  '/agent/tickets',
-  },
-  {
-    id:         'USR-003',
-    name:       'Tigist Alemu',
-    email:      'tigist@insa.gov.et',
-    password:   'agent123',
-    role:       'agent',
-    department: 'Tier-1 Helpdesk',
-    avatar:     'TA',
-    homeRoute:  '/agent/tickets',
-  },
-  {
-    id:         'USR-004',
-    name:       'Dawit Tesfaye',
-    email:      'dawit@insa.gov.et',
-    password:   'manager123',
-    role:       'manager',
-    department: 'IT Operations',
-    avatar:     'DT',
-    homeRoute:  '/manager/dashboard',
-  },
-  {
-    id:         'USR-005',
-    name:       'Bethlehem Tadesse',
-    email:      'bethlehem@insa.gov.et',
-    password:   'user123',
-    role:       'portal',
-    department: 'Finance & Procurement',
-    avatar:     'BT',
-    homeRoute:  '/portal/my-tickets',
-  },
-  {
-    id:         'USR-006',
-    name:       'Solomon Worku',
-    email:      'solomon@insa.gov.et',
-    password:   'user123',
-    role:       'portal',
-    department: 'Human Resources',
-    avatar:     'SW',
-    homeRoute:  '/portal/my-tickets',
-  },
-];
+import { login as apiLogin } from '@/lib/api/auth';
 
 const STORAGE_KEY = 'insa_helpdesk_user';
+const TOKEN_KEY = 'insa_helpdesk_token';
 const SESSION_COOKIE = 'insa_helpdesk_user';
+
+/** Backend role → frontend route bucket */
+const ROLE_MAP = {
+  SYSTEM_ADMIN:       'admin',
+  HELPDESK_MANAGER:   'manager',
+  HELPDESK_AGENT:     'agent',
+  END_USER:           'portal',
+  DEPARTMENT_MANAGER: 'manager',
+  KNOWLEDGE_MANAGER:  'admin',
+};
 
 function persistUser(safeUser) {
   if (typeof window === 'undefined') return;
@@ -76,26 +25,37 @@ function persistUser(safeUser) {
   document.cookie = `${SESSION_COOKIE}=${encodeURIComponent(JSON.stringify(safeUser))}; Path=/; SameSite=Lax`;
 }
 
-/** Attempt login — returns the user object or null */
-export function loginWithCredentials(email, password) {
-  const account = DEMO_ACCOUNTS.find(
-    (a) => a.email.toLowerCase() === email.toLowerCase() && a.password === password
-  );
-  if (!account) return null;
+/**
+ * Attempt login — returns the user object or null.
+ * Calls the real backend POST /users/login.
+ */
+export async function loginWithCredentials(username, password) {
+  try {
+    const data = await apiLogin(username, password);
+    // data = { token, user: { id, username, email, role, phone, location } }
 
-  // Strip the password before storing
-  const { password: _pw, ...safeUser } = account;
-  persistUser(safeUser);
-  return safeUser;
-}
+    // Store the raw JWT
+    localStorage.setItem(TOKEN_KEY, data.token);
 
-/** Login directly by role (one-click demo buttons) */
-export function loginAsRole(role) {
-  const account = DEMO_ACCOUNTS.find((a) => a.role === role);
-  if (!account) return null;
-  const { password: _pw, ...safeUser } = account;
-  persistUser(safeUser);
-  return safeUser;
+    // Map the backend role to a frontend bucket
+    const backendRole = data.user.role;
+    const mappedRole = ROLE_MAP[backendRole] || 'portal';
+
+    const safeUser = {
+      id: data.user.id,
+      username: data.user.username,
+      email: data.user.email,
+      role: mappedRole,
+      backendRole: backendRole,
+      phone: data.user.phone,
+      location: data.user.location,
+    };
+
+    persistUser(safeUser);
+    return safeUser;
+  } catch {
+    return null;
+  }
 }
 
 /** Get the currently logged-in user (client-side only) */
@@ -113,6 +73,7 @@ export function getStoredUser() {
 export function logout() {
   if (typeof window !== 'undefined') {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(TOKEN_KEY);
     document.cookie = `${SESSION_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
   }
 }

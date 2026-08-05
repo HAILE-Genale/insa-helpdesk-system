@@ -1,52 +1,14 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { loginWithCredentials, loginAsRole, DEMO_ACCOUNTS, ROLE_LABELS } from '@/lib/auth';
+import Link from 'next/link';
+import { loginWithCredentials } from '@/lib/auth';
 import { useAuth } from '@/lib/AuthContext';
-
-const ROLE_GROUPS = [
-  {
-    role:    'portal',
-    label:   'Staff Portal',
-    emoji:   '👤',
-    color:   'from-brand-600 to-indigo-600',
-    glow:    'shadow-brand-500/30',
-    border:  'border-brand-400/30',
-    desc:    'Submit & track IT support tickets',
-  },
-  {
-    role:    'agent',
-    label:   'Agent Workspace',
-    emoji:   '🎧',
-    color:   'from-emerald-600 to-teal-600',
-    glow:    'shadow-emerald-500/30',
-    border:  'border-emerald-400/30',
-    desc:    'Manage and resolve the support queue',
-  },
-  {
-    role:    'manager',
-    label:   'Manager View',
-    emoji:   '📈',
-    color:   'from-amber-500 to-orange-600',
-    glow:    'shadow-amber-500/30',
-    border:  'border-amber-400/30',
-    desc:    'Monitor team performance & escalations',
-  },
-  {
-    role:    'admin',
-    label:   'Admin Console',
-    emoji:   '⚙️',
-    color:   'from-violet-600 to-purple-700',
-    glow:    'shadow-violet-500/30',
-    border:  'border-violet-400/30',
-    desc:    'System configuration & user management',
-  },
-];
 
 export default function LoginPage() {
   const { login } = useAuth();
   const [nextPath, setNextPath] = useState(null);
-  const [email,    setEmail]    = useState('');
+  const [username, setUsername] = useState('');
 
   useEffect(() => {
     setNextPath(new URLSearchParams(window.location.search).get('next'));
@@ -55,28 +17,19 @@ export default function LoginPage() {
   const [error,    setError]    = useState('');
   const [loading,  setLoading]  = useState(false);
 
-
-  /* One-click instant login (no form needed) */
-  function handleQuickLogin(role) {
-    const user = loginAsRole(role);
-    if (user) login(user, nextPath);
-  }
-
   /* Manual form submit */
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    setTimeout(() => {                 // tiny artificial delay for UX
-      const user = loginWithCredentials(email.trim(), password);
-      setLoading(false);
-      if (!user) {
-        setError('Invalid email or password. Try a demo account below.');
-        return;
-      }
-      login(user, nextPath);
-    }, 600);
+    const user = await loginWithCredentials(username.trim(), password);
+    setLoading(false);
+    if (!user) {
+      setError('Invalid username or password.');
+      return;
+    }
+    login(user, nextPath);
   }
 
   return (
@@ -157,12 +110,12 @@ export default function LoginPage() {
             {/* ── Manual login form ── */}
             <form onSubmit={handleSubmit} className="space-y-4 mb-6">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Email Address</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Username</label>
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                  placeholder="username@insa.gov.et"
+                  type="text"
+                  value={username}
+                  onChange={(e) => { setUsername(e.target.value); setError(''); }}
+                  placeholder="Enter your username"
                   required
                   className="w-full px-4 py-2.5 text-sm rounded-xl glass-input text-slate-900 placeholder-slate-400 focus:outline-none"
                 />
@@ -191,7 +144,7 @@ export default function LoginPage() {
                   <input type="checkbox" className="rounded" />
                   Remember me
                 </label>
-                <a href="#" className="text-brand-600 font-semibold hover:text-brand-700">Forgot password?</a>
+                <Link href="/forgot-password" className="text-brand-600 font-semibold hover:text-brand-700">Forgot password?</Link>
               </div>
 
               <button
@@ -209,46 +162,6 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
-
-            {/* ── Divider ── */}
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex-1 h-px bg-slate-200" />
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Or try a demo account</span>
-              <div className="flex-1 h-px bg-slate-200" />
-            </div>
-
-            {/* ── One-click demo login cards ── */}
-            <div className="grid grid-cols-2 gap-3">
-              {ROLE_GROUPS.map((g) => {
-                const acc = DEMO_ACCOUNTS.find((a) => a.role === g.role);
-                return (
-                  <button
-                    key={g.role}
-                    type="button"
-                    onClick={() => handleQuickLogin(g.role)}
-                    aria-label={`Sign in as ${acc?.name ?? g.label}, ${ROLE_LABELS[g.role]}`}
-                    className={`group text-left p-3.5 rounded-2xl border bg-gradient-to-br ${g.color} ${g.border} shadow-lg ${g.glow} hover:scale-[1.02] active:scale-[0.98] transition-all duration-200`}
-                  >
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-lg leading-none">{g.emoji}</span>
-                      <span className="text-xs font-extrabold text-white tracking-wide">{g.label}</span>
-                    </div>
-                    <div className="text-[10px] text-white/70 leading-snug mb-2">{g.desc}</div>
-                    {acc && (
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-5 h-5 rounded-full bg-white/25 text-white text-[9px] font-bold flex items-center justify-center">
-                          {acc.avatar}
-                        </div>
-                        <span className="text-[10px] text-white/80 font-medium">{acc.name}</span>
-                      </div>
-                    )}
-                    <div className="mt-2.5 text-[10px] text-white/60 font-mono">
-                      {acc?.email} • {acc?.password}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
 
             <p className="mt-6 text-center text-[10px] text-slate-400">
               Protected by INSA Security Policy • Single Sign-On (SSO) Enabled
