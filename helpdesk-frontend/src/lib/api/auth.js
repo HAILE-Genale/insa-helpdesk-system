@@ -30,7 +30,7 @@ export async function register(userData) {
 export async function forgotPassword(email) {
   // The backend returns a plain string, not JSON,
   // so we use a raw fetch here to get the text response.
-  const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8085/api';
+  const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api';
 
   const headers = { 'Content-Type': 'application/json' };
   if (typeof window !== 'undefined') {
@@ -55,7 +55,7 @@ export async function forgotPassword(email) {
  * POST /users/reset-password?token=...&newPassword=...
  */
 export async function resetPassword(token, newPassword) {
-  const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8085/api';
+  const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api';
 
   const headers = { 'Content-Type': 'application/json' };
 
