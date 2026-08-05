@@ -50,6 +50,13 @@ public class TeamController {
         return ApiResponse.success(teamService.toDto(team), "Team created");
     }
 
+    /** Update a team's name/description/default flag. */
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('TEAM_MANAGE')")
+    public ApiResponse<SupportTeamDto> updateTeam(@PathVariable Long id, @RequestBody CreateTeamRequest request) {
+        return ApiResponse.success(teamService.toDto(teamService.updateTeam(id, request)), "Team updated");
+    }
+
     /** Delete a team. */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('TEAM_MANAGE')")

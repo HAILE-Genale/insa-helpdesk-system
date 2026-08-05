@@ -68,6 +68,26 @@ public class TeamService {
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found: " + id));
     }
 
+    /** Update a team's name/description/default flag. */
+    @Transactional
+    public SupportTeam updateTeam(Long id, CreateTeamRequest request) {
+        SupportTeam team = getTeam(id);
+        if (request.getName() != null && !request.getName().isBlank()) {
+            // Prevent renaming onto an existing team's name.
+            teamRepository.findByName(request.getName().trim())
+                    .filter(other -> !other.getId().equals(id))
+                    .ifPresent(other -> {
+                        throw new IllegalArgumentException("A team named '" + request.getName() + "' already exists");
+                    });
+            team.setName(request.getName().trim());
+        }
+        if (request.getDescription() != null) {
+            team.setDescription(request.getDescription());
+        }
+        team.setDefault(request.isDefault());
+        return teamRepository.save(team);
+    }
+
     /** Delete a team (members and rules cascade in the database). */
     @Transactional
     public void deleteTeam(Long id) {

@@ -10,6 +10,11 @@ export async function createTeam(data) {
   return apiClient('/teams', { method: 'POST', body: JSON.stringify(data) });
 }
 
+/** Update a team's name/description/default flag. */
+export async function updateTeam(id, data) {
+  return apiClient(`/teams/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+
 /** Add an agent to a team. */
 export async function addTeamMember(teamId, userId) {
   return apiClient(`/teams/${teamId}/members`, { method: 'POST', body: JSON.stringify({ userId }) });
