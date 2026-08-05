@@ -35,7 +35,9 @@ public class RoleSeeder implements CommandLineRunner {
                     Permission.builder().code("CATEGORY_MANAGE").description("Manage categories").build(),
                     Permission.builder().code("KB_AUTHOR").description("Author knowledge base articles").build(),
                     Permission.builder().code("KB_PUBLISH").description("Publish knowledge base articles").build(),
-                    Permission.builder().code("REPORTING_VIEW").description("View reports").build()
+                    Permission.builder().code("REPORTING_VIEW").description("View reports").build(),
+                    Permission.builder().code("TICKET_ASSIGN").description("Assign and reassign tickets").build(),
+                    Permission.builder().code("TEAM_MANAGE").description("Manage support teams and routing rules").build()
             );
             permissionRepository.saveAll(permissions);
         }
@@ -46,11 +48,11 @@ public class RoleSeeder implements CommandLineRunner {
             Set<Permission> systemAdminPerms = Set.copyOf(allPerms);
             
             Set<Permission> helpdeskManagerPerms = allPerms.stream()
-                    .filter(p -> List.of("TICKET_UPDATE", "TICKET_PRIORITY_CHANGE", "TICKET_REOPEN_CLOSED", "REPORTING_VIEW").contains(p.getCode()))
+                    .filter(p -> List.of("TICKET_UPDATE", "TICKET_PRIORITY_CHANGE", "TICKET_REOPEN_CLOSED", "REPORTING_VIEW", "TICKET_ASSIGN", "TEAM_MANAGE").contains(p.getCode()))
                     .collect(Collectors.toSet());
-            
+
             Set<Permission> helpdeskAgentPerms = allPerms.stream()
-                    .filter(p -> List.of("TICKET_CREATE", "TICKET_UPDATE").contains(p.getCode()))
+                    .filter(p -> List.of("TICKET_CREATE", "TICKET_UPDATE", "TICKET_ASSIGN").contains(p.getCode()))
                     .collect(Collectors.toSet());
             
             Set<Permission> endUserPerms = allPerms.stream()

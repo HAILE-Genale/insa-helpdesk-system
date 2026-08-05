@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -29,4 +31,5 @@ public class CreateUserRequest {
 
     private String phone;
     private String location;
+    private List<String> expertise;
 }

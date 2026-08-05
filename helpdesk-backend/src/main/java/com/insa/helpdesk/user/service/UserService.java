@@ -66,6 +66,7 @@ public class UserService {
                 .role(role)
                 .phone(request.getPhone())
                 .location(request.getLocation())
+                .expertise(request.getExpertise() != null ? request.getExpertise() : new java.util.ArrayList<>())
                 .active(true)
                 .build();
 
@@ -90,6 +91,7 @@ public class UserService {
         if (request.getEmail() != null) user.setEmail(request.getEmail());
         if (request.getPhone() != null) user.setPhone(request.getPhone());
         if (request.getLocation() != null) user.setLocation(request.getLocation());
+        if (request.getExpertise() != null) user.setExpertise(request.getExpertise());
         User saved = userRepository.save(user);
         logActivity(saved, "PROFILE_UPDATED", "Profile fields updated");
         return toDto(saved);
@@ -168,6 +170,7 @@ public class UserService {
                 .phone(user.getPhone())
                 .location(user.getLocation())
                 .active(user.isActive())
+                .expertise(user.getExpertise())
                 .build();
     }
 }
