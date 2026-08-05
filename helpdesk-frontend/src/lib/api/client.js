@@ -35,7 +35,18 @@ export async function apiClient(endpoint, options = {}) {
   }
 
   if (!response.ok) {
-    throw new Error(`API Request failed with status ${response.status}`);
+    let errorMsg = `API Request failed with status ${response.status}`;
+    try {
+      const errorData = await response.json();
+      if (errorData && errorData.message) {
+        errorMsg = errorData.message;
+      } else if (errorData && errorData.error) {
+        errorMsg = errorData.error;
+      }
+    } catch (e) {
+      // Ignore if response is not JSON
+    }
+    throw new Error(errorMsg);
   }
 
   // Handle 204 No Content

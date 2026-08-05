@@ -13,8 +13,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.core.annotation.Order;
+
 @Component
 @RequiredArgsConstructor
+@Order(1)
 public class RoleSeeder implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
