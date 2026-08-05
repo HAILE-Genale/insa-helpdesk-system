@@ -24,46 +24,16 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ex.getMessage()));
     }
 
-    /**
-     * Invalid query parameter value (e.g. ?impact=URGENT instead of HIGH/MEDIUM/LOW).
-     * Returned as a 400 Bad Request rather than a 500.
-     */
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
-        String message = "Invalid value '" + ex.getValue() + "' for parameter '" + ex.getName() + "'";
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(message));
-    }
-
-    /**
-     * Malformed request body (e.g. PUT /priorities/matrix with invalid JSON or wrong enum).
-     * Returned as a 400 Bad Request rather than a 500.
-     */
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Void>> handleNotReadable(HttpMessageNotReadableException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("Malformed request body: " + ex.getMessage()));
-    }
-
-    /**
-     * Missing required query parameter (e.g. /calculate?impact=HIGH but no urgency).
-     * Returned as a 400 Bad Request rather than a 500.
-     */
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<ApiResponse<Void>> handleMissingParam(MissingServletRequestParameterException ex) {
-        String message = "Missing required parameter '" + ex.getParameterName() + "'";
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(message));
-    }
-
-    /**
-     * Service-level validation failures (e.g. null or incomplete matrix rows).
-     * Returned as a 400 Bad Request rather than a 500.
-     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDenied(org.springframework.security.access.AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error("Access Denied: " + ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
