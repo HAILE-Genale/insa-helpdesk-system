@@ -31,4 +31,11 @@ public class TicketHistory {
     private String oldValue;
     private String newValue;
     private ZonedDateTime changedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (changedAt == null) {
+            changedAt = ZonedDateTime.now();
+        }
+    }
 }

@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 const icons = {
   home:         '🏠',
@@ -74,6 +75,7 @@ function useRoleFromPath() {
 export function Sidebar() {
   const pathname = usePathname();
   const role     = useRoleFromPath();
+  const { user, logout } = useAuth();
 
   const currentNav = navigationByRole[role] ?? navigationByRole.portal;
   const meta       = roleLabels[role]       ?? roleLabels.portal;
@@ -121,16 +123,39 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Back to Home link for non-portal sections */}
-      {role !== 'portal' && (
-        <Link
-          href="/"
-          className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 border border-slate-200 transition"
+      {/* User info + Logout */}
+      <div className="border-t border-slate-200 pt-4 space-y-2">
+        {user && (
+          <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+              {user.username?.[0]?.toUpperCase() ?? '?'}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-slate-800 truncate">{user.username}</p>
+              <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Back to Home for non-portal sections */}
+        {role !== 'portal' && (
+          <Link
+            href="/"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 border border-slate-200 transition"
+          >
+            <span>🏠</span>
+            <span>Staff Portal</span>
+          </Link>
+        )}
+
+        <button
+          onClick={logout}
+          className="w-full flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 hover:text-rose-700 border border-rose-200 transition"
         >
-          <span>🏠</span>
-          <span>Back to Staff Portal</span>
-        </Link>
-      )}
+          <span>🚪</span>
+          <span>Log Out</span>
+        </button>
+      </div>
     </aside>
   );
 }

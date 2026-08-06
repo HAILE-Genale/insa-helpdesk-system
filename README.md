@@ -53,23 +53,98 @@ git config --global user.email "your.email@example.com"
 
 ---
 
-## 🏃 3. How to Run the Project Locally
+---
+
+## ⚙️ 3. Environment Configuration (Read This Before Running)
+
+This section documents the **exact configuration currently in use**. Many startup errors contributors have hit are caused by mismatched ports or missing env variables. Follow this exactly.
+
+---
+
+### Backend Environment — `helpdesk-backend/.env`
+
+Create a file named `.env` inside `helpdesk-backend/` (copy from `.env.example`):
+
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=insa_helpdesk
+DB_USERNAME=postgres
+DB_PASSWORD=your_postgres_password
+JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+JWT_EXPIRATION=86400000
+FRONTEND_BASE_URL=http://localhost:3000
+
+# Mail (optional — uses Mailtrap sandbox by default, emails fail silently without it)
+MAIL_HOST=sandbox.smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=your_mailtrap_username
+MAIL_PASSWORD=your_mailtrap_password
+MAIL_FROM=noreply@insa-helpdesk.local
+```
+
+> ⚠️ **The `.env` file is gitignored. Never commit it.**
+
+---
+
+### Backend Port — `application.yml`
+
+> **The backend runs on port `8085`, NOT `8080`.**
+
+The `.env.example` says `SERVER_PORT=8080` — that is outdated. The actual `application.yml` now uses **8085** because 8080 was already in use on the development machine.
+
+```yaml
+server:
+  port: 8085          # ← always 8085, not 8080
+  servlet:
+    context-path: /api
+```
+
+The full API base URL is: `http://localhost:8085/api`
+
+---
+
+### Frontend Environment — `helpdesk-frontend/.env.local`
+
+Create a file named `.env.local` inside `helpdesk-frontend/`:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8085/api
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=any-random-string-here
+```
+
+> ⚠️ **`NEXT_PUBLIC_API_BASE_URL` must point to port `8085`**. Using `8080` causes "Failed to fetch" errors on every API call.  
+> ⚠️ **`NEXT_PUBLIC_*` variables are baked in at build time.** If you change this file, you must **restart** `npm run dev` for it to take effect.
+
+---
+
+## 🏃 4. How to Run the Project Locally
 
 ### Running the Backend (Java / Spring Boot)
 1. Open terminal and navigate to the backend folder:
    ```bash
    cd helpdesk-backend
    ```
-2. Start the backend application:
-   - On Windows (PowerShell/CMD):
+2. Make sure PostgreSQL is running and the database exists:
+   ```sql
+   CREATE DATABASE insa_helpdesk;
+   ```
+3. Copy `.env.example` to `.env` and fill in your database password (see section 3 above).
+4. Start the backend:
+   - On Windows (PowerShell):
      ```bash
-     .\mvnw spring-boot:run
+     .\mvnw.cmd spring-boot:run
      ```
-   - If Maven is installed globally:
+   - On Mac/Linux:
      ```bash
-     mvn spring-boot:run
+     ./mvnw spring-boot:run
      ```
-3. Your server will start running at `http://localhost:8080`!
+5. The server starts at **`http://localhost:8085/api`**
+6. Swagger UI is available at: `http://localhost:8085/api/swagger-ui.html`
+
+> ✅ A successful startup ends with a line like:  
+> `Started HelpdeskApplication ... Tomcat started on port 8085`
 
 ---
 
@@ -82,15 +157,128 @@ git config --global user.email "your.email@example.com"
    ```bash
    npm install
    ```
-3. Start the frontend client:
+3. Create `.env.local` as described in section 3 above (copy from `.env.local.example` if it exists).
+4. Start the development server:
    ```bash
    npm run dev
    ```
-4. Open your browser and go to `http://localhost:3000` to view the application!
+5. Open **`http://localhost:3000`** in your browser.
+
+> ⚠️ Always start the **backend first**, then the frontend.
 
 ---
 
-## 🌿 4. Git Rules: Branches Explained Simply
+---
+
+## 🐛 Known Errors & Fixes (Based on Real Issues)
+
+These are errors that have actually happened during development. If you hit one of these, the fix is documented here.
+
+---
+
+### ❌ "Failed to load users. Failed to fetch"
+**Cause:** Frontend `.env.local` is pointing to the wrong port (`8080` instead of `8085`).  
+**Fix:** Open `helpdesk-frontend/.env.local` and make sure it reads:
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8085/api
+```
+Then **restart** `npm run dev`.
+
+---
+
+### ❌ "Found more than one migration with version 3" (Flyway error)
+**Cause:** Duplicate Flyway migration files (e.g., two files both named `V3__...sql`).  
+**Fix:** Each migration version must be unique. The project migration files are now correctly numbered V1–V16. If you add a new migration, check the highest existing version number first:
+```bash
+ls helpdesk-backend/src/main/resources/db/migration/
+```
+Name your file `V17__your_description.sql` (incrementing from the last one).
+
+---
+
+### ❌ "Migration VX__something.sql failed — column does not exist" (Flyway error)
+**Cause:** A migration ran and failed partway. Flyway recorded it as a failed migration and refuses to retry until it is repaired.  
+**Fix:** Run the Flyway repair command from the backend folder:
+```bash
+.\mvnw.cmd flyway:repair -Dflyway.url=jdbc:postgresql://localhost:5432/insa_helpdesk -Dflyway.user=postgres -Dflyway.password=YOUR_PASSWORD
+```
+Then fix the SQL in the migration file and restart the backend.
+
+---
+
+### ❌ "Could not resolve placeholder 'app.mail.frontend-base-url'"
+**Cause:** `application-dev.yml` is missing the `app.mail` block.  
+**Fix:** Make sure `helpdesk-backend/src/main/resources/application-dev.yml` contains:
+```yaml
+app:
+  mail:
+    from: ${MAIL_FROM:noreply@insa-helpdesk.local}
+    frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+```
+
+---
+
+### ❌ "Parameter 0 of constructor in SmtpEmailService required a bean of type JavaMailSender"
+**Cause:** Spring Mail is not configured — the `spring.mail` block is missing from `application-dev.yml`.  
+**Fix:** Add this to `helpdesk-backend/src/main/resources/application-dev.yml`:
+```yaml
+spring:
+  mail:
+    host: ${MAIL_HOST:sandbox.smtp.mailtrap.io}
+    port: ${MAIL_PORT:2525}
+    username: ${MAIL_USERNAME:dev}
+    password: ${MAIL_PASSWORD:dev}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+```
+Email failures in dev are logged silently and do not crash the app once configured.
+
+---
+
+### ❌ "Web server failed to start. Port 8080 was already in use"
+**Cause:** Another process is using port 8080.  
+**Fix:** The project is already configured to use port **8085**. If you see this error, something reset `application.yml`. Check that it contains `port: 8085`:
+```yaml
+server:
+  port: 8085
+```
+Or find what is using 8080 and stop it (on Windows: `netstat -ano | findstr :8080`).
+
+---
+
+### ❌ "could not initialize proxy [User#X] — no Session" (backend 500 error)
+**Cause:** Hibernate lazy-loading tried to fetch a related entity (`reporter`, `assignee`) after the database session closed.  
+**Fix:** This is already fixed in the codebase — `reporter` and `assignee` on the `Ticket` entity use `FetchType.EAGER`, and the `TicketController` is annotated with `@Transactional(readOnly = true)`. If you add new entity relationships, prefer `FetchType.EAGER` for small lookups, or ensure the method is inside a `@Transactional` boundary.
+
+---
+
+### ❌ "Failed to load tickets. An unexpected error occurred"
+**Cause:** User's JWT token was issued before new permissions (`TICKET_VIEW`, `TICKET_MANAGE`, `TICKET_COMMENT`) were added to their role.  
+**Fix:** Log out and log back in to get a fresh JWT that includes the updated permissions.
+
+---
+
+### ❌ Teams & Routing page redirects to landing page
+**Cause:** The user's role does not have `TICKET_ASSIGN` or `TEAM_MANAGE` permissions, so `GET /teams` returns 403, which the frontend handles by clearing auth and redirecting to login.  
+**Fix:** Make sure the user's role has both permissions. Run this SQL:
+```sql
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.name = 'SYSTEM_ADMIN' AND p.code IN ('TEAM_MANAGE', 'TICKET_ASSIGN')
+  AND NOT EXISTS (
+    SELECT 1 FROM role_permissions rp
+    WHERE rp.role_id = r.id AND rp.permission_id = p.id
+  );
+```
+Then log out and log back in.
+
+---
+
+## 🌿 5. Git Rules: Branches Explained Simply
 
 Think of `main` and `dev` as the **master copies** of a building design.
 - ❌ **NEVER write code directly on `main` or `dev`** (Doing this can break the working application).
@@ -104,7 +292,7 @@ Think of `main` and `dev` as the **master copies** of a building design.
 
 ---
 
-## 🔄 5. Daily Step-by-Step Workflow (How to Work & Push)
+## 🔄 6. Daily Step-by-Step Workflow (How to Work & Push)
 
 Follow these **6 simple steps** every time you work on a task:
 
@@ -149,7 +337,7 @@ git push -u origin feature/your-task-name
 
 ---
 
-## 📩 6. How to Submit Your Code (Pull Request / PR)
+## 📩 7. How to Submit Your Code (Pull Request / PR)
 
 After pushing your branch, you need to submit your code so the team lead can review and add it to `dev`.
 
@@ -163,7 +351,7 @@ After pushing your branch, you need to submit your code so the team lead can rev
 
 ---
 
-## 🚫 7. Golden Rules (Do's and Don'ts for Beginners)
+## 🚫 8. Golden Rules (Do's and Don'ts for Beginners)
 
 ### ✅ DO:
 - ✅ Always pull the latest code (`git pull origin dev`) before starting your work.
@@ -177,7 +365,7 @@ After pushing your branch, you need to submit your code so the team lead can rev
 
 ---
 
-## 📖 8. Mini Git Dictionary (Key Terms Made Easy)
+## 📖 9. Mini Git Dictionary (Key Terms Made Easy)
 
 | Term | What it Means |
 | :--- | :--- |

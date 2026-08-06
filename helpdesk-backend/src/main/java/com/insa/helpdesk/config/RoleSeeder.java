@@ -29,13 +29,18 @@ public class RoleSeeder implements CommandLineRunner {
             List<Permission> permissions = Arrays.asList(
                     Permission.builder().code("USER_MANAGE").description("Manage users").build(),
                     Permission.builder().code("TICKET_CREATE").description("Create tickets").build(),
+                    Permission.builder().code("TICKET_VIEW").description("View own tickets").build(),
                     Permission.builder().code("TICKET_UPDATE").description("Update tickets").build(),
+                    Permission.builder().code("TICKET_MANAGE").description("Manage and update any ticket status").build(),
+                    Permission.builder().code("TICKET_COMMENT").description("Add comments to tickets").build(),
                     Permission.builder().code("TICKET_PRIORITY_CHANGE").description("Change ticket priority").build(),
                     Permission.builder().code("TICKET_REOPEN_CLOSED").description("Reopen closed tickets").build(),
                     Permission.builder().code("CATEGORY_MANAGE").description("Manage categories").build(),
                     Permission.builder().code("KB_AUTHOR").description("Author knowledge base articles").build(),
                     Permission.builder().code("KB_PUBLISH").description("Publish knowledge base articles").build(),
-                    Permission.builder().code("REPORTING_VIEW").description("View reports").build()
+                    Permission.builder().code("REPORTING_VIEW").description("View reports").build(),
+                    Permission.builder().code("TICKET_ASSIGN").description("Assign and reassign tickets").build(),
+                    Permission.builder().code("TEAM_MANAGE").description("Manage support teams and routing rules").build()
             );
             permissionRepository.saveAll(permissions);
         }
@@ -44,23 +49,26 @@ public class RoleSeeder implements CommandLineRunner {
             List<Permission> allPerms = permissionRepository.findAll();
 
             Set<Permission> systemAdminPerms = Set.copyOf(allPerms);
-            
+
             Set<Permission> helpdeskManagerPerms = allPerms.stream()
-                    .filter(p -> List.of("TICKET_UPDATE", "TICKET_PRIORITY_CHANGE", "TICKET_REOPEN_CLOSED", "REPORTING_VIEW").contains(p.getCode()))
+                    .filter(p -> List.of("TICKET_VIEW", "TICKET_UPDATE", "TICKET_MANAGE", "TICKET_COMMENT",
+                            "TICKET_PRIORITY_CHANGE", "TICKET_REOPEN_CLOSED", "REPORTING_VIEW",
+                            "TICKET_ASSIGN", "TEAM_MANAGE").contains(p.getCode()))
                     .collect(Collectors.toSet());
-            
+
             Set<Permission> helpdeskAgentPerms = allPerms.stream()
-                    .filter(p -> List.of("TICKET_CREATE", "TICKET_UPDATE").contains(p.getCode()))
+                    .filter(p -> List.of("TICKET_CREATE", "TICKET_VIEW", "TICKET_UPDATE",
+                            "TICKET_MANAGE", "TICKET_COMMENT", "TICKET_ASSIGN").contains(p.getCode()))
                     .collect(Collectors.toSet());
-            
+
             Set<Permission> endUserPerms = allPerms.stream()
-                    .filter(p -> p.getCode().equals("TICKET_CREATE"))
+                    .filter(p -> List.of("TICKET_CREATE", "TICKET_VIEW", "TICKET_COMMENT").contains(p.getCode()))
                     .collect(Collectors.toSet());
-            
+
             Set<Permission> departmentManagerPerms = allPerms.stream()
-                    .filter(p -> p.getCode().equals("REPORTING_VIEW"))
+                    .filter(p -> List.of("TICKET_VIEW", "REPORTING_VIEW").contains(p.getCode()))
                     .collect(Collectors.toSet());
-            
+
             Set<Permission> knowledgeManagerPerms = allPerms.stream()
                     .filter(p -> List.of("KB_AUTHOR", "KB_PUBLISH").contains(p.getCode()))
                     .collect(Collectors.toSet());
@@ -71,6 +79,17 @@ public class RoleSeeder implements CommandLineRunner {
             roleRepository.save(Role.builder().name("END_USER").description("End User").permissions(endUserPerms).build());
             roleRepository.save(Role.builder().name("DEPARTMENT_MANAGER").description("Department Manager").permissions(departmentManagerPerms).build());
             roleRepository.save(Role.builder().name("KNOWLEDGE_MANAGER").description("Knowledge Manager").permissions(knowledgeManagerPerms).build());
+        } else {
+            // Ensure new permissions exist and are assigned to existing roles.
+            ensurePermissionExists("TICKET_VIEW", "View own tickets", allPerms -> allPerms);
+            ensurePermissionExists("TICKET_MANAGE", "Manage and update any ticket status", allPerms -> allPerms);
+            ensurePermissionExists("TICKET_COMMENT", "Add comments to tickets", allPerms -> allPerms);
+        }
+    }
+
+    private void ensurePermissionExists(String code, String description, java.util.function.Function<List<Permission>, List<Permission>> ignore) {
+        if (permissionRepository.findByCode(code).isEmpty()) {
+            permissionRepository.save(Permission.builder().code(code).description(description).build());
         }
     }
 }
