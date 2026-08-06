@@ -3,6 +3,9 @@ package com.insa.helpdesk.user.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "users")
 @Getter
@@ -53,6 +56,14 @@ public class User {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;
+
+    /** Ticket categories this user is skilled in (FR-025 expertise routing). */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_expertise", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "expertise")
+    @Builder.Default
+    private List<String> expertise = new ArrayList<>();
+
     @Column(nullable = false)
     @Builder.Default
     private boolean active = true;
