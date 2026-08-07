@@ -18,6 +18,7 @@ public class UserResponseDto {
     private String role;
     private String phone;
     private String location;
+    private String department;
     private boolean active;
     private List<String> expertise;
 }

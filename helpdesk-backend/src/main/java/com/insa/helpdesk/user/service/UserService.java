@@ -14,6 +14,7 @@ import com.insa.helpdesk.user.repository.UserRepository;
 import com.insa.helpdesk.user.repository.RoleRepository;
 import com.insa.helpdesk.user.repository.UserActivityLogRepository;
 import com.insa.helpdesk.user.repository.PasswordResetTokenRepository;
+import com.insa.helpdesk.user.repository.DepartmentRepository;
 import com.insa.helpdesk.common.email.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +33,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final DepartmentRepository departmentRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -66,6 +68,7 @@ public class UserService {
                 .role(role)
                 .phone(request.getPhone())
                 .location(request.getLocation())
+                .department(departmentFromId(request.getDepartment()))
                 .expertise(request.getExpertise() != null ? request.getExpertise() : new java.util.ArrayList<>())
                 .active(true)
                 .build();
@@ -91,6 +94,7 @@ public class UserService {
         if (request.getEmail() != null) user.setEmail(request.getEmail());
         if (request.getPhone() != null) user.setPhone(request.getPhone());
         if (request.getLocation() != null) user.setLocation(request.getLocation());
+        if (request.getDepartment() != null) user.setDepartment(departmentFromId(request.getDepartment()));
         if (request.getExpertise() != null) user.setExpertise(request.getExpertise());
         User saved = userRepository.save(user);
         logActivity(saved, "PROFILE_UPDATED", "Profile fields updated");
@@ -162,6 +166,12 @@ public class UserService {
     }
 
     private UserResponseDto toDto(User user) {
+        String deptName = null;
+        try {
+            if (user.getDepartment() != null) {
+                deptName = user.getDepartment().getName();
+            }
+        } catch (Exception ignored) {}
         return UserResponseDto.builder()
                 .id(user.getId())
                 .username(user.getUsername())
@@ -169,8 +179,19 @@ public class UserService {
                 .role(user.getRole().getName())
                 .phone(user.getPhone())
                 .location(user.getLocation())
+                .department(deptName)
                 .active(user.isActive())
                 .expertise(user.getExpertise())
                 .build();
+    }
+
+    /** Resolve department by name string — null-safe */
+    private com.insa.helpdesk.user.entity.Department departmentFromId(String name) {
+        if (name == null || name.isBlank()) return null;
+        return departmentRepository.findByName(name).orElseGet(() -> {
+            com.insa.helpdesk.user.entity.Department d = new com.insa.helpdesk.user.entity.Department();
+            d.setName(name);
+            return departmentRepository.save(d);
+        });
     }
 }

@@ -5,11 +5,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -17,9 +17,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-// FR-003 (LDAP/AD integration): blocked pending real directory server
-// details from INSA IT. authSource/ldapDn fields already exist on
-// User for when this becomes available.
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -42,9 +39,15 @@ public class SecurityConfig {
         return provider;
     }
 
+    /**
+     * Explicitly wire the AuthenticationManager with our DaoAuthenticationProvider
+     * so that UserService.login() uses BCrypt password verification correctly.
+     * Using config.getAuthenticationManager() causes Spring to ignore the
+     * DaoAuthenticationProvider bean and fall back to a no-op provider.
+     */
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
+    public AuthenticationManager authenticationManager() {
+        return new ProviderManager(authenticationProvider());
     }
 
     @Bean
@@ -52,10 +55,14 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationProvider(authenticationProvider())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/users/login", "/users/register", "/users/forgot-password", "/users/reset-password").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/users").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/knowledge-base", "/knowledge-base/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/categories", "/categories/**", "/category", "/category/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/teams/public").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

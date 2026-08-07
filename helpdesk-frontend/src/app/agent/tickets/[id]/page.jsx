@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/input';
-import { getTicket, getComments, addComment, updateTicketStatus, assignTicket } from '@/lib/api/tickets';
+import { getTicket, getComments, addComment, updateTicketStatus, assignTicket, manualAssignTicket } from '@/lib/api/tickets';
 import { getUsers } from '@/lib/api/users';
 
 const STATUSES = [
@@ -93,13 +93,23 @@ export default function AgentTicketDetailPage({ params }) {
     setSavingAssign(true);
     setAssignMsg('');
     try {
-      const res = await assignTicket(id, Number(selectedAgent));
+      // Use manual-assign so managers can override even without TICKET_ASSIGN
+      const res = await manualAssignTicket(id, Number(selectedAgent));
       const updated = res?.data ?? res;
       setTicket(updated);
       setAssignMsg('Assignment saved.');
       setTimeout(() => setAssignMsg(''), 3000);
     } catch (err) {
-      setAssignMsg('Error: ' + (err.message || 'Failed to assign'));
+      // Fall back to regular assign if manual-assign fails (e.g. insufficient perms)
+      try {
+        const res = await assignTicket(id, Number(selectedAgent));
+        const updated = res?.data ?? res;
+        setTicket(updated);
+        setAssignMsg('Assignment saved.');
+        setTimeout(() => setAssignMsg(''), 3000);
+      } catch (err2) {
+        setAssignMsg('Error: ' + (err2.message || 'Failed to assign'));
+      }
     } finally {
       setSavingAssign(false);
     }
@@ -298,6 +308,9 @@ export default function AgentTicketDetailPage({ params }) {
           <Card glass>
             <CardContent className="p-5 space-y-4">
               <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Assignment</h3>
+              <p className="text-[10px] text-slate-400 -mt-2">
+                Reassign to cover agent absence or escalate to another team member.
+              </p>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Assigned Agent</label>
                 <select
@@ -308,7 +321,7 @@ export default function AgentTicketDetailPage({ params }) {
                   <option value="">— Unassigned —</option>
                   {agents.map((a) => (
                     <option key={a.id} value={String(a.id)}>
-                      {a.username} {a.email ? `(${a.email})` : ''}
+                      {a.username}{a.department ? ` · ${a.department}` : ''}
                     </option>
                   ))}
                 </select>
@@ -319,7 +332,7 @@ export default function AgentTicketDetailPage({ params }) {
                 </p>
               )}
               <Button variant="primary" size="sm" className="w-full" onClick={handleSaveAssign} disabled={savingAssign || !selectedAgent}>
-                {savingAssign ? 'Saving...' : 'Save Assignment'}
+                {savingAssign ? 'Saving...' : '↪ Save Assignment'}
               </Button>
             </CardContent>
           </Card>

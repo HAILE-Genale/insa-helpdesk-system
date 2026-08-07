@@ -56,9 +56,18 @@ public class AssignmentService {
 
         SupportTeam team = null;
         if (category != null && !category.isBlank()) {
-            team = routingRuleRepository.findByCategory(category)
-                    .map(TeamRoutingRule::getTeam)
-                    .orElse(null);
+            // 1. Prefer a specialist team whose routing rule matches the category string.
+            List<TeamRoutingRule> rules = routingRuleRepository.findByCategory(category);
+            if (!rules.isEmpty()) {
+                team = rules.get(0).getTeam();
+            }
+
+            // 2. If no routing rule matched, try finding a team whose name exactly
+            //    matches the category — this is the case when the portal form sends
+            //    the team name directly as the category (user picked a team by name).
+            if (team == null) {
+                team = teamRepository.findByName(category).orElse(null);
+            }
         }
 
         if (team == null) {

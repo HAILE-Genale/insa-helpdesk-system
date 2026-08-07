@@ -27,13 +27,29 @@ public class TicketController {
 
     private final TicketService ticketService;
 
-    /** List all tickets (admin/agent view). */
+    /** List tickets — scoped by role:
+     *  SYSTEM_ADMIN → all tickets
+     *  HELPDESK_MANAGER → only their team's tickets
+     *  HELPDESK_AGENT → their assigned queue
+     */
     @GetMapping
-    public ApiResponse<List<TicketResponseDto>> listTickets() {
-        List<TicketResponseDto> data = ticketService.getAllTickets().stream()
-                .map(this::toResponseDto)
-                .toList();
-        return ApiResponse.success(data, "Tickets");
+    public ApiResponse<List<TicketResponseDto>> listTickets(Authentication authentication) {
+        User user = resolveUser(authentication);
+        String role = user.getRole() != null ? user.getRole().getName() : "";
+
+        List<Ticket> tickets;
+        if ("SYSTEM_ADMIN".equals(role)) {
+            tickets = ticketService.getAllTickets();
+        } else if ("HELPDESK_MANAGER".equals(role)) {
+            tickets = ticketService.getTeamTickets(user.getId());
+        } else {
+            // Agents see their own assigned tickets
+            tickets = ticketService.getAgentQueue(user.getId());
+        }
+
+        return ApiResponse.success(
+                tickets.stream().map(this::toResponseDto).toList(),
+                "Tickets");
     }
 
     /** Get a single ticket by id. */
@@ -130,6 +146,23 @@ public class TicketController {
         return ApiResponse.success(toResponseDto(updated), "Ticket assigned");
     }
 
+    /**
+     * Manual reassignment — allows HELPDESK_MANAGER or SYSTEM_ADMIN to override
+     * the current assignee (e.g. when an agent is absent).
+     */
+    @PatchMapping("/{id}/manual-assign")
+    @PreAuthorize("hasAnyAuthority('TICKET_ASSIGN', 'TICKET_MANAGE')")
+    @Transactional
+    public ApiResponse<TicketResponseDto> manualAssign(
+            @PathVariable Long id,
+            @RequestBody AssignRequest body,
+            Authentication authentication) {
+
+        User changedBy = resolveUser(authentication);
+        Ticket updated = ticketService.assignTicket(id, body.getAssigneeId(), changedBy);
+        return ApiResponse.success(toResponseDto(updated), "Ticket manually reassigned");
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
@@ -184,7 +217,7 @@ public class TicketController {
         if (authentication != null && authentication.getPrincipal() instanceof UserPrincipal up) {
             return up.getUser();
         }
-        // Fallback for testing (should not happen in production with real auth).
+        // Fallback: return a minimal user — will hit admin path
         return User.builder().id(1L).username("system").build();
     }
 

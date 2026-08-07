@@ -53,7 +53,7 @@ public class User {
     @Column
     private java.time.OffsetDateTime lastLoginAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "department_id")
     private Department department;
 

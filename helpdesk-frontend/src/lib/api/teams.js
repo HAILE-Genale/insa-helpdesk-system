@@ -1,5 +1,10 @@
 import { apiClient } from './client';
 
+/** Fetch teams for the public ticket-creation form (no special permission needed). */
+export async function getTeamsPublic() {
+  return apiClient('/teams/public');
+}
+
 /** Fetch all support teams (with members and routing rules). */
 export async function getTeams() {
   return apiClient('/teams');

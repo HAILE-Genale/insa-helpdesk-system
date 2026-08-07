@@ -236,7 +236,7 @@ export default function AdminTeamsPage() {
 
   const openCreate = () => {
     setEditingTeam(null);
-    setForm({ name: '', description: '', isDefault: false, selectedCategories: [] });
+    setForm({ name: '', description: '', isDefault: false, selectedCategories: [], managerId: '' });
     setShowModal(true);
   };
 
@@ -247,6 +247,7 @@ export default function AdminTeamsPage() {
       description: team.description || '',
       isDefault: team.isDefault || false,
       selectedCategories: team.routingRules ?? [],
+      managerId: team.manager ? String(team.manager.id) : '',
     });
     setShowModal(true);
   };
@@ -260,8 +261,14 @@ export default function AdminTeamsPage() {
         name: form.name.trim(),
         description: form.description || null,
         isDefault: form.isDefault,
+        managerId: form.managerId ? Number(form.managerId) : null,
         routingCategories: form.selectedCategories,
       };
+      if (!payload.managerId && !editingTeam) {
+        setError('A team manager is required');
+        setSaving(false);
+        return;
+      }
       if (editingTeam) {
         const res = await updateTeam(editingTeam.id, payload);
         const updated = res?.data ?? res;
@@ -316,11 +323,11 @@ export default function AdminTeamsPage() {
     );
   }
 
-  // Agents not already on the selected team
+  // Only HELPDESK_AGENT users not already on the selected team
   const availableAgents = (teamId) => {
     const team = teams.find((t) => t.id === teamId);
     const memberIds = new Set((team?.members ?? []).map((m) => m.id));
-    return users.filter((u) => u.active !== false && !memberIds.has(u.id));
+    return users.filter((u) => u.active !== false && u.role === 'HELPDESK_AGENT' && !memberIds.has(u.id));
   };
 
   return (
@@ -394,6 +401,11 @@ export default function AdminTeamsPage() {
                           )}
                         </div>
                         <h3 className="text-sm font-bold text-slate-900">{team.name}</h3>
+                        {team.manager && (
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            Manager: <span className="font-semibold text-slate-700">{team.manager.username}</span>
+                          </p>
+                        )}
                       </div>
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => openEdit(team)}>Edit</Button>
@@ -510,6 +522,34 @@ export default function AdminTeamsPage() {
             </div>
 
             <div className="space-y-4">
+              {/* Manager — mandatory, shows only HELPDESK_MANAGER users */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  Team Manager <span className="text-rose-500">*</span>
+                  <span className="ml-1 text-[10px] text-slate-400 font-normal">(must have HELPDESK_MANAGER role)</span>
+                </label>
+                <select
+                  value={form.managerId}
+                  onChange={(e) => setForm((f) => ({ ...f, managerId: e.target.value }))}
+                  className="w-full rounded-xl glass-input px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none transition"
+                  required
+                >
+                  <option value="">— Select a manager —</option>
+                  {users
+                    .filter((u) => u.active !== false && u.role === 'HELPDESK_MANAGER')
+                    .map((u) => (
+                      <option key={u.id} value={String(u.id)}>
+                        {u.username} ({u.email})
+                      </option>
+                    ))}
+                </select>
+                {users.filter((u) => u.active !== false && u.role === 'HELPDESK_MANAGER').length === 0 && (
+                  <p className="text-[10px] text-amber-600 mt-1">
+                    No users with HELPDESK_MANAGER role found. Create one in User Management first.
+                  </p>
+                )}
+              </div>
+
               <TeamNamePicker
                 value={form.name}
                 onChange={(name) => setForm((f) => ({ ...f, name }))}

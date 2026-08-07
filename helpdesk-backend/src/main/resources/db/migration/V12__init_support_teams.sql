@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS team_routing_rules (
     id BIGSERIAL PRIMARY KEY,
     team_id BIGINT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
     category VARCHAR(100) NOT NULL,
-    CONSTRAINT uq_team_routing_category UNIQUE (category)
+    CONSTRAINT uq_team_routing_team_category UNIQUE (team_id, category)
 );
 
 CREATE INDEX IF NOT EXISTS idx_team_members_team ON team_members(team_id);

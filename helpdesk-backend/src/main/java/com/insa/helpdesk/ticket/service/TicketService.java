@@ -31,6 +31,7 @@ public class TicketService {
     private final TicketHistoryRepository historyRepository;
     private final AssignmentService assignmentService;
     private final UserRepository userRepository;
+    private final com.insa.helpdesk.team.repository.SupportTeamRepository teamRepository;
 
     /** Create a new ticket and auto-route it to a team/agent. */
     @Transactional
@@ -118,6 +119,15 @@ public class TicketService {
     @Transactional(readOnly = true)
     public List<Ticket> getAllTickets() {
         return ticketRepository.findAll();
+    }
+
+    /** All tickets in the team(s) managed by this user (manager-scoped view). */
+    @Transactional(readOnly = true)
+    public List<Ticket> getTeamTickets(Long managerId) {
+        return teamRepository.findByManagerId(managerId).stream()
+                .flatMap(team -> ticketRepository.findByTeamId(team.getId()).stream())
+                .distinct()
+                .toList();
     }
 
     /** Tickets submitted by a specific user (portal "My Tickets"). */

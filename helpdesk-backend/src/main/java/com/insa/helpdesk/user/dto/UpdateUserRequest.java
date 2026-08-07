@@ -19,5 +19,6 @@ public class UpdateUserRequest {
 
     private String phone;
     private String location;
+    private String department;
     private List<String> expertise;
 }

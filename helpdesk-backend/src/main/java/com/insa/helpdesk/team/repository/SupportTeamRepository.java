@@ -17,6 +17,9 @@ public interface SupportTeamRepository extends JpaRepository<SupportTeam, Long> 
     /** Find the fallback team(s) — the one marked as default. */
     List<SupportTeam> findByIsDefaultTrue();
 
+    /** Find all teams managed by a specific user. */
+    List<SupportTeam> findByManagerId(Long managerId);
+
     /** Find the team that owns a routing rule for the given category. */
     Optional<SupportTeam> findByRoutingRulesCategory(String category);
 }

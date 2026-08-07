@@ -27,6 +27,19 @@ public class SupportTeamDto {
     /** Category names this team auto-routes from. */
     private List<String> routingRules;
 
+    /** The manager of this team. */
+    private ManagerDto manager;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ManagerDto {
+        private Long id;
+        private String username;
+        private String email;
+    }
+
     @Data
     @Builder
     @NoArgsConstructor

@@ -44,6 +44,14 @@ public class TeamService {
                 .description(request.getDescription())
                 .isDefault(request.isDefault())
                 .build();
+
+        // Manager is mandatory
+        if (request.getManagerId() == null) {
+            throw new IllegalArgumentException("A team manager is required");
+        }
+        User manager = userRepository.findById(request.getManagerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Manager user not found: " + request.getManagerId()));
+        team.setManager(manager);
         teamRepository.save(team);
 
         if (request.getMemberIds() != null) {
@@ -84,6 +92,11 @@ public class TeamService {
         if (request.getDescription() != null) {
             team.setDescription(request.getDescription());
         }
+        if (request.getManagerId() != null) {
+            User manager = userRepository.findById(request.getManagerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Manager not found: " + request.getManagerId()));
+            team.setManager(manager);
+        }
         team.setDefault(request.isDefault());
         return teamRepository.save(team);
     }
@@ -121,8 +134,8 @@ public class TeamService {
     @Transactional
     public void addRoutingRule(Long teamId, String category) {
         SupportTeam team = getTeam(teamId);
-        if (routingRuleRepository.existsByCategory(category)) {
-            throw new IllegalArgumentException("A routing rule already exists for category '" + category + "'");
+        if (routingRuleRepository.existsByTeamIdAndCategory(teamId, category)) {
+            throw new IllegalArgumentException("This team already has a routing rule for category '" + category + "'");
         }
         addRoutingRuleInternal(team, category);
     }
@@ -164,6 +177,11 @@ public class TeamService {
                 .isDefault(team.isDefault())
                 .members(members)
                 .routingRules(rules)
+                .manager(team.getManager() != null ? SupportTeamDto.ManagerDto.builder()
+                        .id(team.getManager().getId())
+                        .username(team.getManager().getUsername())
+                        .email(team.getManager().getEmail())
+                        .build() : null)
                 .build();
     }
 

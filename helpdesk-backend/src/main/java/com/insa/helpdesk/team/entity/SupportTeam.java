@@ -39,6 +39,11 @@ public class SupportTeam {
     @Builder.Default
     private boolean isDefault = false;
 
+    /** The user who manages this team (must be HELPDESK_MANAGER role). */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "manager_id")
+    private com.insa.helpdesk.user.entity.User manager;
+
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @Builder.Default
     private List<TeamMember> members = new ArrayList<>();

@@ -22,6 +22,9 @@ public class CreateTeamRequest {
     /** Ids of the users (agents) to put on the team. */
     private List<Long> memberIds;
 
+    /** Id of the user who manages this team (must be HELPDESK_MANAGER role). Required. */
+    private Long managerId;
+
     /** Category names that auto-route to this team. */
     private List<String> routingCategories;
 }

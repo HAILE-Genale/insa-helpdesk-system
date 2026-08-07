@@ -34,6 +34,13 @@ export async function assignTicket(id, assigneeId) {
   });
 }
 
+export async function manualAssignTicket(id, assigneeId) {
+  return apiClient(`/tickets/${id}/manual-assign`, {
+    method: 'PATCH',
+    body: JSON.stringify({ assigneeId }),
+  });
+}
+
 export async function getComments(ticketId) {
   return apiClient(`/tickets/${ticketId}/comments`);
 }

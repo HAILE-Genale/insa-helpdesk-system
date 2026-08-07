@@ -37,6 +37,7 @@ const navigationByRole = {
     { name: 'Assigned to Me', href: '/agent/my-queue',        icon: 'user-check' },
     { name: 'SLA Watchlist',  href: '/agent/sla-watch',       icon: 'clock' },
     { name: 'Knowledge Base', href: '/portal/knowledge-base', icon: 'book' },
+    { name: 'Write Article',  href: '/agent/knowledge-base',  icon: 'edit' },
   ],
   admin: [
     { name: 'User Management',  href: '/admin/users',           icon: 'users' },

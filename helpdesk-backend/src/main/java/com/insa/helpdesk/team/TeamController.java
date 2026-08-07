@@ -25,6 +25,19 @@ public class TeamController {
 
     private final TeamService teamService;
 
+    /**
+     * Public endpoint — returns id, name, description for all teams.
+     * Used by the portal ticket-creation form so end-users can pick a team
+     * without needing TICKET_ASSIGN or TEAM_MANAGE authority.
+     */
+    @GetMapping("/public")
+    public ApiResponse<List<SupportTeamDto>> listTeamsPublic() {
+        List<SupportTeamDto> data = teamService.listTeams().stream()
+                .map(teamService::toDto)
+                .toList();
+        return ApiResponse.success(data, "Teams");
+    }
+
     /** List all teams with their members and routing rules. */
     @GetMapping
     @PreAuthorize("hasAnyAuthority('TICKET_ASSIGN', 'TEAM_MANAGE')")

@@ -8,7 +8,7 @@ import {
   CardContent,
 } from '@/components/ui/card'
 import { Input, Select, Textarea } from '@/components/ui/input'
-import { getCategories } from '@/lib/api/categories'
+import { getTeamsPublic } from '@/lib/api/teams'
 import { createTicket } from '@/lib/api/tickets'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -31,8 +31,10 @@ export default function NewTicketPage() {
   const [createdTicket, setCreatedTicket] = useState(null)
   const [error, setError] = useState('')
   const [priority, setPriority] = useState('MEDIUM')
-  const [categories, setCategories] = useState([])
-  const [categoriesLoading, setCategoriesLoading] = useState(true)
+
+  // Teams loaded from the backend — these are the service providers
+  const [teams, setTeams] = useState([])
+  const [teamsLoading, setTeamsLoading] = useState(true)
 
   const [form, setForm] = useState({
     department: '',
@@ -40,17 +42,21 @@ export default function NewTicketPage() {
     phone: '',
     assetTag: '',
     title: '',
-    categoryId: '',
+    teamName: '',      // selected team name — sent as `category` to the backend for auto-routing
     errorMessage: '',
     issueStartDate: '',
     description: '',
   })
 
   useEffect(() => {
-    getCategories()
-      .then((data) => setCategories((data || []).filter((c) => c.active)))
-      .catch(() => setCategories([]))
-      .finally(() => setCategoriesLoading(false))
+    getTeamsPublic()
+      .then((res) => {
+        // ApiResponse wraps data in res.data
+        const list = res?.data ?? res ?? []
+        setTeams(list)
+      })
+      .catch(() => setTeams([]))
+      .finally(() => setTeamsLoading(false))
   }, [])
 
   const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))
@@ -61,12 +67,13 @@ export default function NewTicketPage() {
     setSubmitting(true)
 
     try {
-      const selectedCategory = categories.find((c) => String(c.id) === form.categoryId)
       const payload = {
         title: form.title,
         description: form.description,
         priority,
-        category: selectedCategory?.name || form.categoryId,
+        // team name is used as the category — the backend AssignmentService
+        // matches this against routing rules to auto-assign to the right team
+        category: form.teamName,
         department: form.department,
         location: form.location,
         phone: form.phone,
@@ -76,7 +83,6 @@ export default function NewTicketPage() {
       }
 
       const response = await createTicket(payload)
-      // response is ApiResponse<TicketResponseDto> — data is nested
       const ticket = response?.data ?? response
       setCreatedTicket(ticket)
       setSubmitted(true)
@@ -100,7 +106,7 @@ export default function NewTicketPage() {
             <span className="font-mono font-bold text-slate-800">
               {createdTicket.ticketNumber || `#${createdTicket.id}`}
             </span>
-            . An IT agent will be assigned shortly.
+            . Your request has been routed to the <strong>{form.teamName}</strong> team.
           </p>
           <div className="mt-6 flex justify-center gap-3">
             <Button variant="primary" onClick={() => router.push('/portal/my-tickets')}>
@@ -111,7 +117,10 @@ export default function NewTicketPage() {
               onClick={() => {
                 setSubmitted(false)
                 setCreatedTicket(null)
-                setForm({ department: '', location: '', phone: '', assetTag: '', title: '', categoryId: '', errorMessage: '', issueStartDate: '', description: '' })
+                setForm({
+                  department: '', location: '', phone: '', assetTag: '',
+                  title: '', teamName: '', errorMessage: '', issueStartDate: '', description: '',
+                })
                 setPriority('MEDIUM')
               }}
             >
@@ -129,7 +138,7 @@ export default function NewTicketPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Create Support Ticket</h1>
           <p className="text-xs text-slate-500 mt-1">
-            Fill out the form below to route your request to the right IT support team.
+            Select a service provider team and we'll route your request directly to them.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => router.push('/portal/my-tickets')}>
@@ -186,19 +195,52 @@ export default function NewTicketPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select
-                label="Category"
-                value={form.categoryId}
-                onChange={set('categoryId')}
-                required
-                options={[
-                  { value: '', label: categoriesLoading ? 'Loading...' : 'Select a category' },
-                  ...categories.map((c) => ({
-                    value: String(c.id),
-                    label: c.classificationName ? `${c.name} (${c.classificationName})` : c.name,
-                  })),
-                ]}
-              />
+              {/* ── Service Provider / Team selector ── */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  Service Provider <span className="text-rose-500">*</span>
+                </label>
+                {teamsLoading ? (
+                  <div className="flex items-center gap-2 h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-400">
+                    <span className="inline-block w-3.5 h-3.5 border-2 border-slate-300 border-t-brand-500 rounded-full animate-spin" />
+                    Loading teams…
+                  </div>
+                ) : teams.length === 0 ? (
+                  <div className="px-3 py-2.5 rounded-xl border border-amber-200 bg-amber-50 text-xs text-amber-700">
+                    No service teams configured yet. Please contact your admin.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1">
+                    {teams.map((team) => (
+                      <button
+                        key={team.id}
+                        type="button"
+                        onClick={() => setForm((prev) => ({ ...prev, teamName: team.name }))}
+                        className={`w-full text-left px-3.5 py-2.5 rounded-xl border text-sm transition ${
+                          form.teamName === team.name
+                            ? 'border-brand-400 bg-brand-50 text-brand-800 font-semibold shadow-sm'
+                            : 'border-slate-200 text-slate-700 hover:border-brand-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="font-semibold">{team.name}</div>
+                        {team.description && (
+                          <div className="text-[11px] text-slate-500 mt-0.5 font-normal">{team.description}</div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {/* hidden input to trigger browser required validation */}
+                <input
+                  type="text"
+                  required
+                  value={form.teamName}
+                  onChange={() => {}}
+                  className="sr-only"
+                  aria-hidden="true"
+                  tabIndex={-1}
+                />
+              </div>
 
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">
@@ -269,7 +311,7 @@ export default function NewTicketPage() {
               <Button variant="ghost" type="button" onClick={() => router.push('/portal/my-tickets')}>
                 Cancel
               </Button>
-              <Button variant="primary" type="submit" disabled={submitting}>
+              <Button variant="primary" type="submit" disabled={submitting || !form.teamName}>
                 {submitting ? 'Submitting...' : 'Submit Ticket →'}
               </Button>
             </div>
