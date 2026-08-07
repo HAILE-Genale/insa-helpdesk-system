@@ -76,6 +76,11 @@ public class AssignmentService {
         }
 
         if (team != null) {
+            // Stamp the routed team on the ticket once — stays fixed even after reassignment.
+            // This is what the manager's scoped view queries against.
+            ticket.setTeam(team);
+            ticketRepository.save(ticket);
+
             User assignee = pickMemberForTeam(team, category);
             if (assignee != null) {
                 applyAssignment(ticket, assignee, changedBy);

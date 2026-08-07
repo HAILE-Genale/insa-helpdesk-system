@@ -38,6 +38,23 @@ public class TeamController {
         return ApiResponse.success(data, "Teams");
     }
 
+    /**
+     * Returns only the team(s) managed by the currently authenticated user.
+     * Used by the manager dashboard to scope the reassign agent list.
+     */
+    @GetMapping("/my-team")
+    public ApiResponse<List<SupportTeamDto>> myTeams(
+            org.springframework.security.core.Authentication authentication) {
+        com.insa.helpdesk.common.security.UserPrincipal up =
+                (com.insa.helpdesk.common.security.UserPrincipal) authentication.getPrincipal();
+        Long managerId = up.getUser().getId();
+        List<SupportTeamDto> data = teamService.listTeams().stream()
+                .filter(t -> t.getManager() != null && t.getManager().getId().equals(managerId))
+                .map(teamService::toDto)
+                .toList();
+        return ApiResponse.success(data, "My teams");
+    }
+
     /** List all teams with their members and routing rules. */
     @GetMapping
     @PreAuthorize("hasAnyAuthority('TICKET_ASSIGN', 'TEAM_MANAGE')")

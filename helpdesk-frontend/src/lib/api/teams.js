@@ -5,6 +5,11 @@ export async function getTeamsPublic() {
   return apiClient('/teams/public');
 }
 
+/** Fetch only the team(s) managed by the current user — used by manager dashboard. */
+export async function getMyTeams() {
+  return apiClient('/teams/my-team');
+}
+
 /** Fetch all support teams (with members and routing rules). */
 export async function getTeams() {
   return apiClient('/teams');

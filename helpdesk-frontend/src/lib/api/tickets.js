@@ -51,3 +51,11 @@ export async function addComment(ticketId, content, internal = false) {
     body: JSON.stringify({ content, internal }),
   });
 }
+
+/**
+ * Fetch the ticket detail page for the manager.
+ * GET /tickets is already role-scoped — managers see only their team's tickets.
+ */
+export async function getTeamTickets() {
+  return apiClient('/tickets');
+}

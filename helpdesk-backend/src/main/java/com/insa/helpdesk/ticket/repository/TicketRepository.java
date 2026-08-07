@@ -2,8 +2,6 @@ package com.insa.helpdesk.ticket.repository;
 
 import com.insa.helpdesk.ticket.entity.Ticket;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -13,8 +11,10 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     List<Ticket> findByReporterId(Long reporterId);
     List<Ticket> findByAssigneeId(Long assigneeId);
 
-    /** All tickets assigned to any agent in a given team. */
-    @Query("SELECT t FROM Ticket t WHERE t.assignee.id IN " +
-           "(SELECT tm.user.id FROM TeamMember tm WHERE tm.team.id = :teamId)")
-    List<Ticket> findByTeamId(@Param("teamId") Long teamId);
+    /**
+     * All tickets that were originally routed to a given team.
+     * Uses the team_id column stamped at creation time — survives reassignment
+     * to agents outside the team.
+     */
+    List<Ticket> findByTeamId(Long teamId);
 }

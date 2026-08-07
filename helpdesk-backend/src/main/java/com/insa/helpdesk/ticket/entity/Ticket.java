@@ -1,5 +1,6 @@
 package com.insa.helpdesk.ticket.entity;
 
+import com.insa.helpdesk.team.entity.SupportTeam;
 import com.insa.helpdesk.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -64,6 +65,11 @@ public class Ticket {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "assignee_id")
     private User assignee;
+
+    /** The team this ticket was routed to. Set at creation, never changed by reassignment. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_id")
+    private SupportTeam team;
 
     private ZonedDateTime createdAt;
     private ZonedDateTime updatedAt;

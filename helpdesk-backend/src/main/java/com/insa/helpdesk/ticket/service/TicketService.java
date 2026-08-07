@@ -32,6 +32,7 @@ public class TicketService {
     private final AssignmentService assignmentService;
     private final UserRepository userRepository;
     private final com.insa.helpdesk.team.repository.SupportTeamRepository teamRepository;
+    private final jakarta.persistence.EntityManager entityManager;
 
     /** Create a new ticket and auto-route it to a team/agent. */
     @Transactional
@@ -56,8 +57,12 @@ public class TicketService {
 
         Ticket saved = ticketRepository.save(ticket);
 
-        // Generate human-readable ticket number after save so we have the DB id.
-        saved.setTicketNumber(String.format("TK-%05d", saved.getId()));
+        // Generate a unique ticket number from a dedicated DB sequence so it never
+        // collides regardless of what other rows hold (avoids uq_ticket_number violations).
+        Long seqVal = ((Number) entityManager
+                .createNativeQuery("SELECT nextval('ticket_number_seq')")
+                .getSingleResult()).longValue();
+        saved.setTicketNumber(String.format("TK-%05d", seqVal));
         saved = ticketRepository.save(saved);
 
         // Auto-routing: match category to a team/agent.
