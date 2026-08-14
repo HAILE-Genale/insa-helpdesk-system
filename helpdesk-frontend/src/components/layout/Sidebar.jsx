@@ -55,7 +55,7 @@ const navigationByRole = {
     { name: 'Dashboard',   href: '/manager/dashboard', icon: 'dashboard' },
     { name: 'All Tickets', href: '/agent/tickets',     icon: 'ticket' },
     { name: 'Escalations', href: '/manager/dashboard', icon: 'escalate', badge: '2' },
-    { name: 'Reports',     href: '/admin/reports',     icon: 'chart' },
+    { name: 'Reports',     href: '/manager/reports',     icon: 'chart' },
   ],
 };
 
