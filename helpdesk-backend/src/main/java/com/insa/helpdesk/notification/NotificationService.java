@@ -262,12 +262,15 @@ public class NotificationService {
         String commentText = (comment != null && !comment.isBlank()) ? truncate(comment) : "(no comment)";
 
         String title = "New Feedback Received";
-        String message = String.format(
+        String agentMessage = String.format(
                 "%s - %s gave you %d-star feedback (%s): \"%s\"",
                 ticketRef, authorName, rating, stars, commentText);
+        String managerMessage = String.format(
+                "%s - %s gave %s %d-star feedback (%s): \"%s\"",
+                ticketRef, authorName, agent.getUsername(), rating, stars, commentText);
 
         // 1. Notify the assigned agent directly
-        createNotification(agent, ticket, title, "FEEDBACK_RECEIVED", message);
+        createNotification(agent, ticket, title, "FEEDBACK_RECEIVED", agentMessage);
 
         // 2. Notify the team manager (from the ticket's team)
         User manager = null;
@@ -275,14 +278,14 @@ public class NotificationService {
             manager = ticket.getTeam().getManager();
         }
         if (manager != null && !manager.getId().equals(agent.getId())) {
-            createNotification(manager, ticket, title, "FEEDBACK_RECEIVED", message);
+            createNotification(manager, ticket, title, "FEEDBACK_RECEIVED", managerMessage);
         } else {
             // Fallback: notify all HELPDESK_MANAGERs
             List<User> managers = userRepository.findByRoleNameAndActiveTrue("HELPDESK_MANAGER");
             if (!managers.isEmpty()) {
                 for (User m : managers) {
                     if (!m.getId().equals(agent.getId())) {
-                        createNotification(m, ticket, title, "FEEDBACK_RECEIVED", message);
+                        createNotification(m, ticket, title, "FEEDBACK_RECEIVED", managerMessage);
                     }
                 }
             }

@@ -154,9 +154,7 @@ public class TeamService {
         List<SupportTeamDto.MemberDto> members = team.getMembers().stream()
                 .map(m -> {
                     User u = m.getUser();
-                    long open = ticketRepository.findByAssigneeId(u.getId()).stream()
-                            .filter(t -> List.of("OPEN", "IN_PROGRESS").contains(t.getStatus()))
-                            .count();
+                    long open = ticketRepository.countByAssigneeIdAndStatusIn(u.getId(), List.of("OPEN", "IN_PROGRESS"));
                     return SupportTeamDto.MemberDto.builder()
                             .id(u.getId())
                             .username(u.getUsername())

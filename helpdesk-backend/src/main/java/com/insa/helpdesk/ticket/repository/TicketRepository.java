@@ -12,6 +12,9 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     List<Ticket> findByReporterId(Long reporterId);
     List<Ticket> findByAssigneeId(Long assigneeId);
 
+    /** Count tickets for an assignee with specific statuses. */
+    long countByAssigneeIdAndStatusIn(Long assigneeId, Collection<String> statuses);
+
     /**
      * All tickets that were originally routed to a given team.
      * Uses the team_id column stamped at creation time — survives reassignment
