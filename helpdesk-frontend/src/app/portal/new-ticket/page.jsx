@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/card'
 import { Input, Select, Textarea } from '@/components/ui/input'
 import { getTeamsPublic } from '@/lib/api/teams'
-import { createTicket } from '@/lib/api/tickets'
+import { createTicket, uploadTicketAttachment } from '@/lib/api/tickets'
 import { useAuth } from '@/lib/AuthContext'
 
 const DEPARTMENTS = [
@@ -30,7 +30,10 @@ export default function NewTicketPage() {
   const [submitted, setSubmitted] = useState(false)
   const [createdTicket, setCreatedTicket] = useState(null)
   const [error, setError] = useState('')
+  const [attachmentWarning, setAttachmentWarning] = useState('')
   const [priority, setPriority] = useState('MEDIUM')
+  const [attachments, setAttachments] = useState([])
+  const fileInputRef = useRef(null)
 
   // Teams loaded from the backend — these are the service providers
   const [teams, setTeams] = useState([])
@@ -61,9 +64,28 @@ export default function NewTicketPage() {
 
   const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))
 
+  const addFiles = (fileList) => {
+    const nextFiles = Array.from(fileList || [])
+    setAttachments((current) => {
+      const merged = [...current]
+      nextFiles.forEach((file) => {
+        const duplicate = merged.some((item) => (
+          item.name === file.name && item.size === file.size && item.lastModified === file.lastModified
+        ))
+        if (!duplicate) merged.push(file)
+      })
+      return merged.slice(0, 5)
+    })
+  }
+
+  const removeAttachment = (index) => {
+    setAttachments((current) => current.filter((_, itemIndex) => itemIndex !== index))
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setAttachmentWarning('')
     setSubmitting(true)
 
     try {
@@ -84,6 +106,15 @@ export default function NewTicketPage() {
 
       const response = await createTicket(payload)
       const ticket = response?.data ?? response
+      if (attachments.length > 0) {
+        const results = await Promise.allSettled(
+          attachments.map((file) => uploadTicketAttachment(ticket.id, file))
+        )
+        const failed = results.filter((result) => result.status === 'rejected')
+        if (failed.length > 0) {
+          setAttachmentWarning(`${failed.length} attachment${failed.length > 1 ? 's' : ''} could not be uploaded. The ticket was still created.`)
+        }
+      }
       setCreatedTicket(ticket)
       setSubmitted(true)
     } catch (err) {
@@ -108,6 +139,11 @@ export default function NewTicketPage() {
             </span>
             . Your request has been routed to the <strong>{form.teamName}</strong> team.
           </p>
+          {attachmentWarning && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mt-4">
+              {attachmentWarning}
+            </p>
+          )}
           <div className="mt-6 flex justify-center gap-3">
             <Button variant="primary" onClick={() => router.push('/portal/my-tickets')}>
               View My Tickets
@@ -121,6 +157,8 @@ export default function NewTicketPage() {
                   department: '', location: '', phone: '', assetTag: '',
                   title: '', teamName: '', errorMessage: '', issueStartDate: '', description: '',
                 })
+                setAttachments([])
+                setAttachmentWarning('')
                 setPriority('MEDIUM')
               }}
             >
@@ -298,13 +336,56 @@ export default function NewTicketPage() {
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                 Attachments (Optional)
               </label>
-              <div className="border-2 border-dashed border-slate-300 hover:border-brand-400 rounded-2xl p-6 text-center bg-slate-50/50 transition cursor-pointer">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click()
+                }}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  addFiles(e.dataTransfer.files)
+                }}
+                className="border-2 border-dashed border-slate-300 hover:border-brand-400 rounded-2xl p-6 text-center bg-slate-50/50 transition cursor-pointer"
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/png,image/jpeg,application/pdf,text/plain,.log,.doc,.docx"
+                  className="hidden"
+                  onChange={(e) => {
+                    addFiles(e.target.files)
+                    e.target.value = ''
+                  }}
+                />
                 <div className="text-slate-400 mb-2">📎</div>
                 <p className="text-xs text-slate-600 font-medium">
-                  Drag and drop screenshots, log files, or docs here
+                  Click to choose files, or drag and drop screenshots, log files, or docs here
                 </p>
-                <p className="text-[11px] text-slate-400 mt-1">PNG, JPG, PDF up to 10MB</p>
+                <p className="text-[11px] text-slate-400 mt-1">PNG, JPG, PDF, TXT, LOG, DOC, DOCX</p>
               </div>
+              {attachments.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {attachments.map((file, index) => (
+                    <div key={`${file.name}-${file.size}`} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-semibold text-slate-700">{file.name}</p>
+                        <p className="text-[10px] text-slate-400">{Math.ceil(file.size / 1024)} KB</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(index)}
+                        className="ml-3 rounded-lg px-2 py-1 text-[10px] font-bold text-rose-600 hover:bg-rose-50"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="pt-4 border-t border-slate-200 flex justify-end gap-3">

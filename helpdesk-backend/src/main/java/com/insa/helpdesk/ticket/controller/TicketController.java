@@ -11,7 +11,9 @@ import com.insa.helpdesk.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -111,6 +113,26 @@ public class TicketController {
                 .map(this::toCommentDto)
                 .toList();
         return ApiResponse.success(comments, "Comments");
+    }
+
+    /** Upload an attachment for a ticket. */
+    @PostMapping(value = "/{id}/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyAuthority('TICKET_CREATE', 'TICKET_COMMENT', 'TICKET_MANAGE')")
+    @Transactional
+    public ApiResponse<TicketAttachmentDto> uploadAttachment(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+
+        return ApiResponse.success(toAttachmentDto(ticketService.addAttachment(id, file)), "Attachment uploaded");
+    }
+
+    /** Attachments for a ticket. */
+    @GetMapping("/{id}/attachments")
+    public ApiResponse<List<TicketAttachmentDto>> getAttachments(@PathVariable Long id) {
+        List<TicketAttachmentDto> attachments = ticketService.getAttachments(id).stream()
+                .map(this::toAttachmentDto)
+                .toList();
+        return ApiResponse.success(attachments, "Attachments");
     }
 
     /** Tickets submitted by the current user (portal "My Tickets"). */
@@ -219,6 +241,16 @@ public class TicketController {
                 .content(c.getContent())
                 .internal(c.isInternal())
                 .createdAt(c.getCreatedAt())
+                .build();
+    }
+
+    private TicketAttachmentDto toAttachmentDto(com.insa.helpdesk.ticket.entity.TicketAttachment attachment) {
+        return TicketAttachmentDto.builder()
+                .id(attachment.getId())
+                .ticketId(attachment.getTicket().getId())
+                .fileName(attachment.getFileName())
+                .fileUrl(attachment.getFileUrl())
+                .fileType(attachment.getFileType())
                 .build();
     }
 

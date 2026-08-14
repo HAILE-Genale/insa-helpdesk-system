@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/input';
-import { getTicket, getComments, addComment } from '@/lib/api/tickets';
+import { TicketAttachments } from '@/components/tickets/TicketAttachments';
+import { getTicket, getComments, addComment, getTicketAttachments } from '@/lib/api/tickets';
 import { getTicketFeedback, submitFeedback } from '@/lib/api/feedback';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -56,6 +57,7 @@ export default function PortalTicketDetailPage({ params }) {
 
   const [ticket, setTicket]               = useState(null);
   const [comments, setComments]           = useState([]);
+  const [attachments, setAttachments]     = useState([]);
   const [feedback, setFeedback]           = useState(null);
   const [loading, setLoading]             = useState(true);
   const [error, setError]                 = useState('');
@@ -78,13 +80,15 @@ export default function PortalTicketDetailPage({ params }) {
     Promise.all([
       getTicket(id),
       getComments(id),
+      getTicketAttachments(id).catch(() => ({ data: [] })),
       getTicketFeedback(id).catch(() => ({ data: [] })),
     ])
-      .then(([ticketRes, commentsRes, feedbackRes]) => {
+      .then(([ticketRes, commentsRes, attachmentsRes, feedbackRes]) => {
         if (cancelled) return;
         const t = ticketRes?.data ?? ticketRes;
         setTicket(t);
         setComments((commentsRes?.data ?? commentsRes ?? []).filter((c) => !c.internal));
+        setAttachments(attachmentsRes?.data ?? attachmentsRes ?? []);
         const fbList = feedbackRes?.data ?? feedbackRes ?? [];
         setFeedback(Array.isArray(fbList) && fbList.length > 0 ? fbList[0] : null);
       })
@@ -204,6 +208,17 @@ export default function PortalTicketDetailPage({ params }) {
           </Card>
 
           {/* Feedback Section — shown when ticket is RESOLVED/CLOSED and no feedback yet */}
+          <Card glass>
+            <CardHeader><CardTitle className="text-sm">Attachments</CardTitle></CardHeader>
+            <CardContent className="px-6 pb-6">
+              {attachments.length > 0 ? (
+                <TicketAttachments attachments={attachments} />
+              ) : (
+                <p className="text-xs text-slate-400 text-center py-4">No attachments uploaded.</p>
+              )}
+            </CardContent>
+          </Card>
+
           {canGiveFeedback && (
             <Card glass>
               <CardHeader><CardTitle className="text-sm">Rate Your Support Experience</CardTitle></CardHeader>

@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/input';
 import { SlaCountdown } from '@/components/sla/SlaCountdown';
-import { getTicket, getComments, addComment, updateTicketStatus } from '@/lib/api/tickets';
+import { TicketAttachments } from '@/components/tickets/TicketAttachments';
+import { getTicket, getComments, addComment, updateTicketStatus, getTicketAttachments } from '@/lib/api/tickets';
 
 const STATUSES = [
   { value: 'OPEN',        label: 'Open' },
@@ -40,6 +41,7 @@ export default function AgentTicketDetailPage({ params }) {
 
   const [ticket, setTicket]                 = useState(null);
   const [comments, setComments]             = useState([]);
+  const [attachments, setAttachments]       = useState([]);
   const [loading, setLoading]               = useState(true);
   const [error, setError]                   = useState('');
 
@@ -58,13 +60,18 @@ export default function AgentTicketDetailPage({ params }) {
     let cancelled = false;
 
     // Load ticket + comments.
-    Promise.all([getTicket(id), getComments(id)])
-      .then(([ticketRes, commentsRes]) => {
+    Promise.all([
+      getTicket(id),
+      getComments(id),
+      getTicketAttachments(id).catch(() => ({ data: [] })),
+    ])
+      .then(([ticketRes, commentsRes, attachmentsRes]) => {
         if (cancelled) return;
         const t = ticketRes?.data ?? ticketRes;
         setTicket(t);
         setStatus(t?.status || 'OPEN');
         setComments(commentsRes?.data ?? commentsRes ?? []);
+        setAttachments(attachmentsRes?.data ?? attachmentsRes ?? []);
       })
       .catch((err) => {
         if (!cancelled) setError('Failed to load ticket. ' + (err.message || ''));
@@ -196,6 +203,17 @@ export default function AgentTicketDetailPage({ params }) {
                   <p className="text-xs font-bold text-rose-700 mb-0.5">Error Message</p>
                   <code className="text-xs text-rose-900 font-mono">{ticket.errorMessage}</code>
                 </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card glass>
+            <CardHeader><CardTitle className="text-sm">Attachments</CardTitle></CardHeader>
+            <CardContent className="px-6 pb-6">
+              {attachments.length > 0 ? (
+                <TicketAttachments attachments={attachments} />
+              ) : (
+                <p className="text-xs text-slate-400 text-center py-4">No attachments uploaded.</p>
               )}
             </CardContent>
           </Card>

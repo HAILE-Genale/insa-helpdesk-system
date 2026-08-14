@@ -13,6 +13,7 @@ public class KnowledgeArticleDto {
     private String category;
     private String department;
     private String tags;
+    private String image;
     private String status;
     private Long authorId;
     private String authorName;

@@ -31,6 +31,9 @@ public class KnowledgeArticle {
     private String department;
     private String tags;
 
+    @Column(columnDefinition = "TEXT")
+    private String image;
+
     /** DRAFT or PUBLISHED */
     @Column(nullable = false)
     @Builder.Default

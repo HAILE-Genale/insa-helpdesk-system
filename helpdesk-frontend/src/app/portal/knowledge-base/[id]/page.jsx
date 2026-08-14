@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { getArticle, getArticles } from '@/lib/api/knowledgeBase';
+import { getArticle, getArticles, resolveImageUrl } from '@/lib/api/knowledgeBase';
 
 function categoryIcon(category) {
   if (!category) return '📄';
@@ -119,6 +119,7 @@ export default function KnowledgeBaseArticlePage({ params }) {
 
   const { steps, notes } = parseSolution(article.solution);
   const icon = categoryIcon(article.category);
+  const imageUrl = resolveImageUrl(article.image);
 
   return (
     <>
@@ -153,9 +154,17 @@ export default function KnowledgeBaseArticlePage({ params }) {
                 {article.views ?? 0} views
               </p>
             </div>
-          </div>
+           </div>
 
-          {/* Problem */}
+           {/* Article Image */}
+           {imageUrl && (
+             <div className="rounded-2xl border border-slate-200 overflow-hidden">
+               <img src={imageUrl} alt={article.title}
+                 className="w-full h-64 md:h-80 object-cover" />
+             </div>
+           )}
+
+           {/* Problem */}
           {article.problem && (
             <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-5">
               <h2 className="text-xs font-bold text-rose-700 uppercase tracking-wider mb-2">🔴 Problem</h2>

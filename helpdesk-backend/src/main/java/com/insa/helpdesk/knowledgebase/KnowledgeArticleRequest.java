@@ -11,5 +11,6 @@ public class KnowledgeArticleRequest {
     private String category;
     private String department;
     private String tags;
+    private String image;
     private String status; // DRAFT or PUBLISHED
 }

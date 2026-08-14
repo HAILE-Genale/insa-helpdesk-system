@@ -53,6 +53,7 @@ public class KnowledgebaseService {
                 .category(req.getCategory())
                 .department(req.getDepartment())
                 .tags(req.getTags())
+                .image(req.getImage())
                 .status(req.getStatus() != null ? req.getStatus() : "DRAFT")
                 .author(persistedAuthor)
                 .build();
@@ -71,6 +72,7 @@ public class KnowledgebaseService {
         if (req.getDepartment() != null) a.setDepartment(req.getDepartment());
         if (req.getTags()       != null) a.setTags(req.getTags());
         if (req.getStatus()     != null) a.setStatus(req.getStatus());
+        if (req.getImage()       != null) a.setImage(req.getImage());
         return toDto(repo.save(a));
     }
 
@@ -90,6 +92,7 @@ public class KnowledgebaseService {
                 .category(a.getCategory())
                 .department(a.getDepartment())
                 .tags(a.getTags())
+                .image(a.getImage())
                 .status(a.getStatus())
                 .authorId(a.getAuthor().getId())
                 .authorName(a.getAuthor().getUsername())

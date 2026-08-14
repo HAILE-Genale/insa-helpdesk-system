@@ -8,8 +8,10 @@ import com.insa.helpdesk.ticket.dto.CommentRequest;
 import com.insa.helpdesk.ticket.dto.CreateTicketRequest;
 import com.insa.helpdesk.ticket.dto.EmailTicketRequest;
 import com.insa.helpdesk.ticket.entity.Ticket;
+import com.insa.helpdesk.ticket.entity.TicketAttachment;
 import com.insa.helpdesk.ticket.entity.TicketComment;
 import com.insa.helpdesk.ticket.entity.TicketHistory;
+import com.insa.helpdesk.ticket.repository.TicketAttachmentRepository;
 import com.insa.helpdesk.ticket.repository.TicketCommentRepository;
 import com.insa.helpdesk.ticket.repository.TicketHistoryRepository;
 import com.insa.helpdesk.ticket.repository.TicketRepository;
@@ -18,9 +20,18 @@ import com.insa.helpdesk.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.ZonedDateTime;
+import java.util.Locale;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Ticket creation, retrieval, status updates, and comments (FRD 3.5).
@@ -30,6 +41,7 @@ import java.util.List;
 public class TicketService {
 
     private final TicketRepository ticketRepository;
+    private final TicketAttachmentRepository attachmentRepository;
     private final TicketCommentRepository commentRepository;
     private final TicketHistoryRepository historyRepository;
     private final AssignmentService assignmentService;
@@ -188,6 +200,55 @@ public class TicketService {
         return commentRepository.findByTicketIdOrderByCreatedAtAsc(ticketId);
     }
 
+    /** Store an attachment for a ticket and keep a database pointer to it. */
+    @Transactional
+    public TicketAttachment addAttachment(Long ticketId, MultipartFile file) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found: " + ticketId));
+
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("No attachment selected");
+        }
+
+        String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "attachment";
+        String extension = extensionOf(originalName);
+        String contentType = file.getContentType() != null ? file.getContentType() : "application/octet-stream";
+
+        if (!isAllowedAttachment(extension, contentType)) {
+            throw new IllegalArgumentException("Unsupported attachment type. Use PNG, JPG, JPEG, PDF, TXT, LOG, DOC, or DOCX.");
+        }
+
+        try {
+            Path dir = Paths.get("uploads", "ticket-attachments", String.valueOf(ticketId))
+                    .toAbsolutePath()
+                    .normalize();
+            Files.createDirectories(dir);
+
+            String storedName = UUID.randomUUID() + extension;
+            Path target = dir.resolve(storedName).normalize();
+            if (!target.startsWith(dir)) {
+                throw new IllegalArgumentException("Invalid attachment path");
+            }
+
+            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+
+            return attachmentRepository.save(TicketAttachment.builder()
+                    .ticket(ticket)
+                    .fileName(originalName)
+                    .fileUrl("/uploads/ticket-attachments/" + ticketId + "/" + storedName)
+                    .fileType(contentType)
+                    .build());
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Failed to store attachment: " + e.getMessage());
+        }
+    }
+
+    /** Attachments for a ticket. */
+    @Transactional(readOnly = true)
+    public List<TicketAttachment> getAttachments(Long ticketId) {
+        return attachmentRepository.findByTicketIdOrderByIdAsc(ticketId);
+    }
+
     /** Fetch a single ticket, or throw 404. */
     @Transactional(readOnly = true)
     public Ticket getTicket(Long id) {
@@ -262,5 +323,27 @@ public class TicketService {
         // Last resort: admin fallback (only for system/anonymous calls)
         return userRepository.findByUsername("admin")
                 .orElseThrow(() -> new ResourceNotFoundException("No reporter resolved and no admin fallback available"));
+    }
+
+    private String extensionOf(String filename) {
+        int dot = filename.lastIndexOf('.');
+        if (dot < 0) {
+            return "";
+        }
+        return filename.substring(dot).toLowerCase(Locale.ROOT);
+    }
+
+    private boolean isAllowedAttachment(String extension, String contentType) {
+        Set<String> allowedExtensions = Set.of(".png", ".jpg", ".jpeg", ".pdf", ".txt", ".log", ".doc", ".docx");
+        if (!allowedExtensions.contains(extension)) {
+            return false;
+        }
+
+        return contentType.startsWith("image/")
+                || contentType.equals("application/pdf")
+                || contentType.equals("text/plain")
+                || contentType.equals("application/msword")
+                || contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                || contentType.equals("application/octet-stream");
     }
 }

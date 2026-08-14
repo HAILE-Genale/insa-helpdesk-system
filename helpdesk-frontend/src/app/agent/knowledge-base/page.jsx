@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getArticles, createArticle, updateArticle, deleteArticle } from '@/lib/api/knowledgeBase';
+import { getArticles, createArticle, updateArticle, deleteArticle, uploadImage, resolveImageUrl } from '@/lib/api/knowledgeBase';
 import { getCategories } from '@/lib/api/categories';
 
 const STATUS_COLORS = {
@@ -18,11 +18,12 @@ const DEPARTMENTS = [
 
 const EMPTY_FORM = {
   title: '', problem: '', cause: '', solution: '',
-  category: '', department: '', tags: '', status: 'DRAFT',
+  category: '', department: '', tags: '', status: 'DRAFT', image: '',
 };
 
 function ArticleForm({ initial, categories, onSave, onCancel, saving }) {
   const [form, setForm] = useState(initial || EMPTY_FORM);
+  const [uploading, setUploading] = useState(false);
   const set = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));
 
   const inputCls = 'w-full px-3 py-2 text-sm rounded-xl border border-slate-200 glass-input text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-400 transition';
@@ -86,6 +87,35 @@ function ArticleForm({ initial, categories, onSave, onCancel, saving }) {
           <label className="block text-xs font-semibold text-slate-700 mb-1">Tags (comma-separated)</label>
           <input type="text" value={form.tags} onChange={set('tags')}
             placeholder="e.g. ERP, password, login" className={inputCls} />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">Article Image</label>
+          {form.image ? (
+            <div className="mb-2">
+              <img src={resolveImageUrl(form.image)} alt="Article image"
+                className="w-full h-24 object-cover rounded-xl border border-slate-200" />
+            </div>
+          ) : null}
+          <input type="file" accept="image/*" onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            setUploading(true);
+            try {
+              const url = await uploadImage(file);
+              setForm((p) => ({ ...p, image: url }));
+            } catch (err) {
+              alert(err.message || 'Image upload failed');
+            } finally {
+              setUploading(false);
+              e.target.value = '';
+            }
+          }} className="w-full text-xs text-slate-600 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" />
+          {uploading && <p className="text-[10px] text-slate-400 mt-1">Uploading…</p>}
+          {form.image ? (
+            <button type="button" onClick={() => setForm((p) => ({ ...p, image: '' }))}
+              className="text-[10px] text-rose-500 hover:text-rose-700 mt-1">Remove image</button>
+          ) : null}
         </div>
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">Status</label>
@@ -209,7 +239,7 @@ export default function AgentKnowledgeBasePage() {
                 title: editing.title, problem: editing.problem, cause: editing.cause || '',
                 solution: editing.solution, category: editing.category || '',
                 department: editing.department || '', tags: editing.tags || '',
-                status: editing.status,
+                status: editing.status, image: editing.image || '',
               } : EMPTY_FORM}
               categories={categories}
               onSave={handleSave}

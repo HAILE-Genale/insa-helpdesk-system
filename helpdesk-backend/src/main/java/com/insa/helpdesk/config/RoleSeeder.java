@@ -53,12 +53,12 @@ public class RoleSeeder implements CommandLineRunner {
             Set<Permission> helpdeskManagerPerms = allPerms.stream()
                     .filter(p -> List.of("TICKET_VIEW", "TICKET_UPDATE", "TICKET_MANAGE", "TICKET_COMMENT",
                             "TICKET_PRIORITY_CHANGE", "TICKET_REOPEN_CLOSED", "REPORTING_VIEW",
-                            "TICKET_ASSIGN", "TEAM_MANAGE").contains(p.getCode()))
+                            "TICKET_ASSIGN", "TEAM_MANAGE", "KB_AUTHOR", "KB_PUBLISH").contains(p.getCode()))
                     .collect(Collectors.toSet());
 
             Set<Permission> helpdeskAgentPerms = allPerms.stream()
                     .filter(p -> List.of("TICKET_CREATE", "TICKET_VIEW", "TICKET_UPDATE",
-                            "TICKET_MANAGE", "TICKET_COMMENT", "TICKET_ASSIGN").contains(p.getCode()))
+                            "TICKET_MANAGE", "TICKET_COMMENT", "TICKET_ASSIGN", "KB_AUTHOR", "KB_PUBLISH").contains(p.getCode()))
                     .collect(Collectors.toSet());
 
             Set<Permission> endUserPerms = allPerms.stream()
@@ -85,11 +85,30 @@ public class RoleSeeder implements CommandLineRunner {
             ensurePermissionExists("TICKET_MANAGE", "Manage and update any ticket status", allPerms -> allPerms);
             ensurePermissionExists("TICKET_COMMENT", "Add comments to tickets", allPerms -> allPerms);
         }
+
+        ensureRoleHasPermissions("HELPDESK_AGENT", "KB_AUTHOR", "KB_PUBLISH");
+        ensureRoleHasPermissions("HELPDESK_MANAGER", "KB_AUTHOR", "KB_PUBLISH");
     }
 
     private void ensurePermissionExists(String code, String description, java.util.function.Function<List<Permission>, List<Permission>> ignore) {
         if (permissionRepository.findByCode(code).isEmpty()) {
             permissionRepository.save(Permission.builder().code(code).description(description).build());
         }
+    }
+
+    private void ensureRoleHasPermissions(String roleName, String... permissionCodes) {
+        roleRepository.findByName(roleName).ifPresent(role -> {
+            boolean changed = false;
+            for (String code : permissionCodes) {
+                Permission permission = permissionRepository.findByCode(code)
+                        .orElseThrow(() -> new IllegalStateException("Missing permission: " + code));
+                if (role.getPermissions().add(permission)) {
+                    changed = true;
+                }
+            }
+            if (changed) {
+                roleRepository.save(role);
+            }
+        });
     }
 }
