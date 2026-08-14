@@ -7,6 +7,7 @@ import { apiClient } from './client';
 export async function login(username, password) {
   return apiClient('/users/login', {
     method: 'POST',
+    skipAuth: true,
     body: JSON.stringify({ username, password }),
   });
 }
@@ -30,13 +31,9 @@ export async function register(userData) {
 export async function forgotPassword(email) {
   // The backend returns a plain string, not JSON,
   // so we use a raw fetch here to get the text response.
-  const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api';
+  const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8085/api';
 
   const headers = { 'Content-Type': 'application/json' };
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('insa_helpdesk_token');
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-  }
 
   const response = await fetch(
     `${BASE_URL}/users/forgot-password`,
@@ -55,7 +52,7 @@ export async function forgotPassword(email) {
  * POST /users/reset-password?token=...&newPassword=...
  */
 export async function resetPassword(token, newPassword) {
-  const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api';
+  const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8085/api';
 
   const headers = { 'Content-Type': 'application/json' };
 

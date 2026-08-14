@@ -15,8 +15,12 @@ import com.insa.helpdesk.ticket.repository.TicketRepository;
 import com.insa.helpdesk.user.entity.User;
 import com.insa.helpdesk.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Comparator;
 import java.util.List;
@@ -32,6 +36,8 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class AssignmentService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AssignmentService.class);
 
     private final TicketRepository ticketRepository;
     private final TicketHistoryRepository ticketHistoryRepository;
@@ -135,8 +141,35 @@ public class AssignmentService {
                         .newValue(newAssigneeName)
                         .build());
 
-        // FR-027: notify the newly-assigned agent (both auto-route and manual assign).
-        notificationService.notifyAssignment(ticket, assignee, changedBy);
+        // FR-027: notify the newly-assigned agent after assignment succeeds.
+        triggerAssignmentNotification(ticket, assignee, changedBy);
+    }
+
+    private void triggerAssignmentNotification(Ticket ticket, User assignee, User changedBy) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()
+                && ticket.getId() != null
+                && assignee.getId() != null) {
+            String changedByName = changedBy != null ? changedBy.getUsername() : "system";
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        notificationService.notifyAssignment(ticket.getId(), assignee.getId(), changedByName);
+                    } catch (Exception e) {
+                        logger.warn("Ticket {} was assigned, but assignment notification failed: {}",
+                                ticket.getId(), e.getMessage());
+                    }
+                }
+            });
+            return;
+        }
+
+        try {
+            notificationService.notifyAssignment(ticket, assignee, changedBy);
+        } catch (Exception e) {
+            logger.warn("Ticket {} was assigned, but assignment notification failed: {}",
+                    ticket.getId(), e.getMessage());
+        }
     }
 
     /**

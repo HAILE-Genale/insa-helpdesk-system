@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/input';
-import { getTicket, getComments, addComment, updateTicketStatus, assignTicket, manualAssignTicket } from '@/lib/api/tickets';
-import { getUsers } from '@/lib/api/users';
+import { SlaCountdown } from '@/components/sla/SlaCountdown';
+import { getTicket, getComments, addComment, updateTicketStatus } from '@/lib/api/tickets';
 
 const STATUSES = [
   { value: 'OPEN',        label: 'Open' },
@@ -40,17 +40,13 @@ export default function AgentTicketDetailPage({ params }) {
 
   const [ticket, setTicket]                 = useState(null);
   const [comments, setComments]             = useState([]);
-  const [agents, setAgents]                 = useState([]);
   const [loading, setLoading]               = useState(true);
   const [error, setError]                   = useState('');
 
-  // Status / assign controls
+  // Status controls
   const [status, setStatus]                 = useState('');
   const [savingStatus, setSavingStatus]     = useState(false);
   const [statusMsg, setStatusMsg]           = useState('');
-  const [selectedAgent, setSelectedAgent]   = useState('');
-  const [savingAssign, setSavingAssign]     = useState(false);
-  const [assignMsg, setAssignMsg]           = useState('');
 
   // Comment controls
   const [noteText, setNoteText]             = useState('');
@@ -59,17 +55,25 @@ export default function AgentTicketDetailPage({ params }) {
   const [noteError, setNoteError]           = useState('');
 
   useEffect(() => {
-    Promise.all([getTicket(id), getComments(id), getUsers()])
-      .then(([ticketRes, commentsRes, usersRes]) => {
+    let cancelled = false;
+
+    // Load ticket + comments.
+    Promise.all([getTicket(id), getComments(id)])
+      .then(([ticketRes, commentsRes]) => {
+        if (cancelled) return;
         const t = ticketRes?.data ?? ticketRes;
         setTicket(t);
         setStatus(t?.status || 'OPEN');
-        setSelectedAgent(String(t?.assigneeId || ''));
         setComments(commentsRes?.data ?? commentsRes ?? []);
-        setAgents((usersRes?.data ?? usersRes ?? []).filter((u) => u.active !== false));
       })
-      .catch((err) => setError('Failed to load ticket. ' + (err.message || '')))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (!cancelled) setError('Failed to load ticket. ' + (err.message || ''));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
   }, [id]);
 
   const handleSaveStatus = async () => {
@@ -85,33 +89,6 @@ export default function AgentTicketDetailPage({ params }) {
       setStatusMsg('Error: ' + (err.message || 'Failed to save'));
     } finally {
       setSavingStatus(false);
-    }
-  };
-
-  const handleSaveAssign = async () => {
-    if (!selectedAgent) return;
-    setSavingAssign(true);
-    setAssignMsg('');
-    try {
-      // Use manual-assign so managers can override even without TICKET_ASSIGN
-      const res = await manualAssignTicket(id, Number(selectedAgent));
-      const updated = res?.data ?? res;
-      setTicket(updated);
-      setAssignMsg('Assignment saved.');
-      setTimeout(() => setAssignMsg(''), 3000);
-    } catch (err) {
-      // Fall back to regular assign if manual-assign fails (e.g. insufficient perms)
-      try {
-        const res = await assignTicket(id, Number(selectedAgent));
-        const updated = res?.data ?? res;
-        setTicket(updated);
-        setAssignMsg('Assignment saved.');
-        setTimeout(() => setAssignMsg(''), 3000);
-      } catch (err2) {
-        setAssignMsg('Error: ' + (err2.message || 'Failed to assign'));
-      }
-    } finally {
-      setSavingAssign(false);
     }
   };
 
@@ -180,6 +157,9 @@ export default function AgentTicketDetailPage({ params }) {
             <p className="text-xs text-slate-500 mt-1">
               Submitted {formatDate(ticket.createdAt)} · Updated {formatDate(ticket.updatedAt)}
             </p>
+            <div className="mt-2">
+              <SlaCountdown deadline={ticket.slaDeadline} violated={ticket.slaViolated} size="lg" />
+            </div>
           </div>
 
           {/* Quick Status Change */}
@@ -304,39 +284,6 @@ export default function AgentTicketDetailPage({ params }) {
 
         {/* Sidebar */}
         <div className="space-y-4">
-          {/* Assignment */}
-          <Card glass>
-            <CardContent className="p-5 space-y-4">
-              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Assignment</h3>
-              <p className="text-[10px] text-slate-400 -mt-2">
-                Reassign to cover agent absence or escalate to another team member.
-              </p>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Assigned Agent</label>
-                <select
-                  value={selectedAgent}
-                  onChange={(e) => setSelectedAgent(e.target.value)}
-                  className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white focus:outline-none focus:border-brand-400 transition"
-                >
-                  <option value="">— Unassigned —</option>
-                  {agents.map((a) => (
-                    <option key={a.id} value={String(a.id)}>
-                      {a.username}{a.department ? ` · ${a.department}` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {assignMsg && (
-                <p className={`text-xs font-semibold ${assignMsg.startsWith('Error') ? 'text-rose-600' : 'text-emerald-600'}`}>
-                  {assignMsg}
-                </p>
-              )}
-              <Button variant="primary" size="sm" className="w-full" onClick={handleSaveAssign} disabled={savingAssign || !selectedAgent}>
-                {savingAssign ? 'Saving...' : '↪ Save Assignment'}
-              </Button>
-            </CardContent>
-          </Card>
-
           {/* Ticket Details */}
           <Card glass>
             <CardContent className="p-5 space-y-3">

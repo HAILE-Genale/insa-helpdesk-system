@@ -147,14 +147,19 @@ export default function MyTicketsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <Badge variant={STATUS_VARIANT[ticket.status] || 'default'}>
-                    {ticket.status?.replace('_', ' ')}
-                  </Badge>
-                  <Link href={`/portal/tickets/${ticket.id}`}>
-                    <Button variant="outline" size="sm">View Details →</Button>
-                  </Link>
-                </div>
+                 <div className="flex items-center gap-3 flex-shrink-0">
+                   <Badge variant={STATUS_VARIANT[ticket.status] || 'default'}>
+                     {ticket.status?.replace('_', ' ')}
+                   </Badge>
+                   {(ticket.status === 'RESOLVED' || ticket.status === 'CLOSED') && !ticket.hasFeedback && (
+                     <Badge variant="progress" className="text-[10px]">
+                       &#9733; Rate Support
+                     </Badge>
+                   )}
+                   <Link href={`/portal/tickets/${ticket.id}`}>
+                     <Button variant="outline" size="sm">View Details →</Button>
+                   </Link>
+                 </div>
               </CardContent>
             </Card>
           ))}

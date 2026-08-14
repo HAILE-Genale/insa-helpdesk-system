@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getMyArticles, createArticle, updateArticle, deleteArticle } from '@/lib/api/knowledgeBase';
+import { getArticles, createArticle, updateArticle, deleteArticle } from '@/lib/api/knowledgeBase';
 import { getCategories } from '@/lib/api/categories';
 
 const STATUS_COLORS = {
@@ -119,7 +119,9 @@ export default function AgentKnowledgeBasePage() {
 
   useEffect(() => {
     Promise.all([
-      getMyArticles().then((r) => setArticles(r?.data ?? r ?? [])),
+      // Agents can view all articles (DRAFT+PUBLISHED) via GET /knowledge-base.
+      // getMyArticles requires KB_AUTHOR which agents don't have, so use getArticles.
+      getArticles().then((r) => setArticles(r?.data ?? r ?? [])),
       getCategories().then((r) => setCategories((r ?? []).filter((c) => c.active))),
     ])
       .catch((e) => setError(e.message))
@@ -128,7 +130,7 @@ export default function AgentKnowledgeBasePage() {
 
   const refresh = () => {
     setLoading(true);
-    getMyArticles()
+    getArticles()
       .then((r) => setArticles(r?.data ?? r ?? []))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));

@@ -1,6 +1,7 @@
 package com.insa.helpdesk.config;
 
 import com.insa.helpdesk.common.security.JwtAuthFilter;
+import com.insa.helpdesk.common.security.JwtAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +26,7 @@ public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
     private final JwtAuthFilter jwtAuthFilter;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -54,12 +56,16 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
+                .exceptionHandling(eh -> eh
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                )
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/users/login", "/users/register", "/users/forgot-password", "/users/reset-password").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/users").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/email-tickets").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/knowledge-base", "/knowledge-base/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/categories", "/categories/**", "/category", "/category/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/teams/public").permitAll()

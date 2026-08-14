@@ -1,12 +1,13 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8085/api';
+export const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8085/api';
 
 export async function apiClient(endpoint, options = {}) {
+  const { skipAuth = false, ...fetchOptions } = options;
   const defaultHeaders = {
     'Content-Type': 'application/json',
   };
 
   // Inject JWT Authorization header (client-side only)
-  if (typeof window !== 'undefined') {
+  if (!skipAuth && typeof window !== 'undefined') {
     const token = localStorage.getItem('insa_helpdesk_token');
     if (token) {
       defaultHeaders['Authorization'] = `Bearer ${token}`;
@@ -14,17 +15,18 @@ export async function apiClient(endpoint, options = {}) {
   }
 
   const config = {
-    ...options,
+    ...fetchOptions,
     headers: {
       ...defaultHeaders,
-      ...options.headers,
+      ...fetchOptions.headers,
     },
   };
 
   const response = await fetch(`${BASE_URL}${endpoint}`, config);
 
-  // On 401/403, clear auth state and redirect to login (client-side only)
-  if (response.status === 401 || response.status === 403) {
+  // On 401 (unauthenticated), clear auth state and redirect to login (client-side only).
+  // 403 (authenticated but forbidden) should NOT log the user out — it's a permission error.
+  if (response.status === 401) {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('insa_helpdesk_token');
       localStorage.removeItem('insa_helpdesk_user');

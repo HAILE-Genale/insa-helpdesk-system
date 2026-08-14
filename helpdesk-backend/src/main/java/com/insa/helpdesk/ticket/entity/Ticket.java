@@ -58,6 +58,22 @@ public class Ticket {
     /** When the issue started */
     private LocalDate issueStartDate;
 
+    /** SLA deadline — when the ticket must be resolved by. */
+    private ZonedDateTime slaDeadline;
+
+    /** Whether the SLA has been breached. */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean slaViolated = false;
+
+    /** When the SLA was breached (if applicable). */
+    private ZonedDateTime slaBreachedAt;
+
+    /** Whether an "SLA breach imminent" warning was already sent for this ticket. */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean slaWarningSent = false;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "reporter_id", nullable = false)
     private User reporter;

@@ -3,6 +3,7 @@ package com.insa.helpdesk.ticket.controller;
 import com.insa.helpdesk.common.dto.ApiResponse;
 import com.insa.helpdesk.common.security.UserPrincipal;
 import com.insa.helpdesk.ticket.dto.*;
+import com.insa.helpdesk.feedback.repository.FeedbackRepository;
 import com.insa.helpdesk.ticket.entity.Ticket;
 import com.insa.helpdesk.ticket.entity.TicketComment;
 import com.insa.helpdesk.ticket.service.TicketService;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TicketController {
 
     private final TicketService ticketService;
+    private final FeedbackRepository feedbackRepository;
 
     /** List tickets — scoped by role:
      *  SYSTEM_ADMIN → all tickets
@@ -182,6 +184,10 @@ public class TicketController {
                 .assetTag(t.getAssetTag())
                 .errorMessage(t.getErrorMessage())
                 .issueStartDate(t.getIssueStartDate())
+                .slaDeadline(t.getSlaDeadline())
+                .slaViolated(t.isSlaViolated())
+                .slaBreachedAt(t.getSlaBreachedAt())
+                .slaWarningSent(t.isSlaWarningSent())
                 .createdAt(t.getCreatedAt())
                 .updatedAt(t.getUpdatedAt())
                 .build();
@@ -197,6 +203,9 @@ public class TicketController {
             dto.setAssigneeName(t.getAssignee().getUsername());
             dto.setAssigneeEmail(t.getAssignee().getEmail());
         }
+
+        // Check if feedback already exists for this ticket
+        dto.setHasFeedback(feedbackRepository.existsByTicketId(t.getId()));
 
         return dto;
     }

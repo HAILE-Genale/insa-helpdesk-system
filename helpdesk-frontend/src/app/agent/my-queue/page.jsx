@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -51,9 +52,11 @@ export default function AgentMyQueuePage() {
             Active incidents assigned to your agent account.
           </p>
         </div>
-        <Button variant="primary" size="sm">
-          + Pick Up Unassigned Ticket
-        </Button>
+        <Link href="/agent/tickets">
+          <Button variant="primary" size="sm">
+            + Pick Up Unassigned Ticket
+          </Button>
+        </Link>
       </div>
 
       {tickets.length === 0 ? (
@@ -93,12 +96,16 @@ export default function AgentMyQueuePage() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-400">Status: {(t.status ?? 'OPEN').replace('_', ' ')}</span>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
-                      Add Internal Note
-                    </Button>
-                    <Button variant="primary" size="sm">
-                      Resolve & Close Ticket →
-                    </Button>
+                    <Link href={`/agent/tickets/${t.id}`}>
+                      <Button variant="outline" size="sm">
+                        Add Internal Note
+                      </Button>
+                    </Link>
+                    <Link href={`/agent/tickets/${t.id}`}>
+                      <Button variant="primary" size="sm">
+                        Resolve & Close Ticket →
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               </CardContent>

@@ -2,6 +2,10 @@ package com.insa.helpdesk.user.repository;
 
 import com.insa.helpdesk.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -9,4 +13,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
+
+    /** All users with the HELPDESK_MANAGER role (for SLA breach notifications). */
+    @Query("SELECT u FROM User u JOIN u.role r WHERE r.name = :roleName AND u.active = true")
+    List<User> findByRoleNameAndActiveTrue(@Param("roleName") String roleName);
 }

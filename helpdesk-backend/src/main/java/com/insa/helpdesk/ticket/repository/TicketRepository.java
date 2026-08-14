@@ -4,6 +4,7 @@ import com.insa.helpdesk.ticket.entity.Ticket;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -17,4 +18,7 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
      * to agents outside the team.
      */
     List<Ticket> findByTeamId(Long teamId);
+
+    /** Active tickets (OPEN, IN_PROGRESS, ON_HOLD) for SLA monitoring. */
+    List<Ticket> findByStatusIn(Collection<String> statuses);
 }

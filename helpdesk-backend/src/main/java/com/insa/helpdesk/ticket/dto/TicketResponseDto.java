@@ -37,6 +37,15 @@ public class TicketResponseDto {
     private String assigneeName;
     private String assigneeEmail;
 
+    // SLA info
+    private ZonedDateTime slaDeadline;
+    private boolean slaViolated;
+    private ZonedDateTime slaBreachedAt;
+    private boolean slaWarningSent;
+
     private ZonedDateTime createdAt;
     private ZonedDateTime updatedAt;
+
+    /** Whether feedback has been submitted for this ticket. */
+    private Boolean hasFeedback;
 }

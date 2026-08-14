@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StatsCard } from '@/components/ui/stats-card';
+import { SlaCountdown } from '@/components/sla/SlaCountdown';
 import { getTickets } from '@/lib/api/tickets';
 
 const PRIORITY_VARIANT = { CRITICAL: 'urgent', HIGH: 'urgent', MEDIUM: 'progress', LOW: 'default' };
@@ -48,7 +49,7 @@ export default function AgentQueuePage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Agent Ticket Queue</h1>
           <p className="text-xs text-slate-500 mt-1">
-            Real-time support queue — auto-refreshes every 30s.
+            Real-time support queue — auto-refreshes every 30s with live SLA countdowns.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -114,6 +115,7 @@ export default function AgentQueuePage() {
                   <th className="p-3.5">Subject</th>
                   <th className="p-3.5">Category</th>
                   <th className="p-3.5">Priority</th>
+                  <th className="p-3.5">SLA</th>
                   <th className="p-3.5">Status</th>
                   <th className="p-3.5">Submitted</th>
                   <th className="p-3.5 text-right pr-5">Actions</th>
@@ -121,7 +123,7 @@ export default function AgentQueuePage() {
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
                 {filtered.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/80 transition">
+                  <tr key={item.id} className={`hover:bg-slate-50/80 transition ${item.slaViolated ? 'bg-rose-50/30' : ''}`}>
                     <td className="p-3.5 pl-5 font-mono font-bold text-brand-600">
                       {item.ticketNumber || `#${item.id}`}
                     </td>
@@ -135,9 +137,12 @@ export default function AgentQueuePage() {
                     <td className="p-3.5 text-slate-600">{item.category || '—'}</td>
                     <td className="p-3.5">
                       <Badge variant={PRIORITY_VARIANT[item.priority] || 'default'}
-                             pulse={item.priority === 'CRITICAL'}>
+                             pulse={item.priority === 'CRITICAL' || item.slaViolated}>
                         {item.priority}
                       </Badge>
+                    </td>
+                    <td className="p-3.5">
+                      <SlaCountdown deadline={item.slaDeadline} violated={item.slaViolated} />
                     </td>
                     <td className="p-3.5">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${

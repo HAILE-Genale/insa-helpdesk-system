@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import { ROLE_LABELS } from '@/lib/auth';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 const roleMeta = {
   portal:  { label: 'Staff Portal',    color: 'bg-brand-50 text-brand-700 border-brand-200',   emoji: '👤' },
@@ -91,6 +92,8 @@ export function Navbar() {
               </span>
               Online
             </div>
+
+            {user && <NotificationBell />}
 
             <Link
               href="/portal/new-ticket"

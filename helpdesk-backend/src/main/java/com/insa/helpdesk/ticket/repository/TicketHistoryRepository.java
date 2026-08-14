@@ -10,4 +10,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * so there is an audit trail of each assignment.</p>
  */
 public interface TicketHistoryRepository extends JpaRepository<TicketHistory, Long> {
+    java.util.List<TicketHistory> findByTicketIdOrderByChangedAtAsc(Long ticketId);
 }

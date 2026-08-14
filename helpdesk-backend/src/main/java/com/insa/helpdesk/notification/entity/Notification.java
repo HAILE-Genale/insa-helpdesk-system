@@ -35,6 +35,9 @@ public class Notification {
     private Ticket ticket;
 
     @Column(nullable = false)
+    private String title;
+
+    @Column(nullable = false)
     private String type;
 
     @Column(nullable = false, columnDefinition = "TEXT")

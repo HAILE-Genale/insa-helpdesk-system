@@ -2,8 +2,11 @@ package com.insa.helpdesk.ticket.service;
 
 import com.insa.helpdesk.assignment.AssignmentService;
 import com.insa.helpdesk.common.exception.ResourceNotFoundException;
+import com.insa.helpdesk.notification.NotificationService;
+import com.insa.helpdesk.sla.SlaService;
 import com.insa.helpdesk.ticket.dto.CommentRequest;
 import com.insa.helpdesk.ticket.dto.CreateTicketRequest;
+import com.insa.helpdesk.ticket.dto.EmailTicketRequest;
 import com.insa.helpdesk.ticket.entity.Ticket;
 import com.insa.helpdesk.ticket.entity.TicketComment;
 import com.insa.helpdesk.ticket.entity.TicketHistory;
@@ -33,6 +36,8 @@ public class TicketService {
     private final UserRepository userRepository;
     private final com.insa.helpdesk.team.repository.SupportTeamRepository teamRepository;
     private final jakarta.persistence.EntityManager entityManager;
+    private final NotificationService notificationService;
+    private final SlaService slaService;
 
     /** Create a new ticket and auto-route it to a team/agent. */
     @Transactional
@@ -66,7 +71,48 @@ public class TicketService {
         saved = ticketRepository.save(saved);
 
         // Auto-routing: match category to a team/agent.
-        return assignmentService.autoRouteOnCreate(saved, persistedReporter);
+        Ticket routed = assignmentService.autoRouteOnCreate(saved, persistedReporter);
+
+        // Apply SLA deadline based on priority.
+        try {
+            routed = slaService.applySlaDeadline(routed);
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(TicketService.class)
+                    .warn("Could not apply SLA deadline for ticket {}: {}", routed.getId(), e.getMessage());
+        }
+
+        // Notify agents (especially when the ticket was created via inbound email).
+        try {
+            notificationService.notifyNewTicketForAgents(routed);
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(TicketService.class)
+                    .warn("Could not notify agents about new ticket {}: {}", routed.getId(), e.getMessage());
+        }
+
+        return routed;
+    }
+
+    /**
+     * Create a ticket from an inbound email (mail-to-ticket bridge).
+     * <p>Resolves the reporter by email address; if no matching user exists, falls
+     * back to the admin account so the ticket is still created and routed.</p>
+     */
+    @Transactional
+    public Ticket createTicketFromEmail(EmailTicketRequest request) {
+        if (request == null || request.getSubject() == null || request.getSubject().isBlank()) {
+            throw new IllegalArgumentException("Email subject is required to create a ticket");
+        }
+
+        User reporter = resolveReporterByEmail(request.getFromEmail());
+
+        CreateTicketRequest createRequest = CreateTicketRequest.builder()
+                .title(truncateTitle(request.getSubject()))
+                .description(request.getBody() != null ? request.getBody() : request.getSubject())
+                .priority(request.getPriority() != null ? request.getPriority() : "MEDIUM")
+                .category(request.getCategory())
+                .build();
+
+        return createTicket(createRequest, reporter);
     }
 
     /** Update a ticket's status and record the change in history. */
@@ -76,8 +122,19 @@ public class TicketService {
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found: " + ticketId));
 
         String oldStatus = ticket.getStatus();
+        if (oldStatus != null && oldStatus.equals(newStatus)) {
+            return ticket;
+        }
         ticket.setStatus(newStatus);
         Ticket saved = ticketRepository.save(ticket);
+
+        // Clear SLA violation when the ticket reaches a terminal status.
+        try {
+            slaService.clearViolationOnResolve(saved);
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(TicketService.class)
+                    .warn("Could not clear SLA violation for ticket {}: {}", saved.getId(), e.getMessage());
+        }
 
         historyRepository.save(TicketHistory.builder()
                 .ticket(saved)
@@ -86,6 +143,14 @@ public class TicketService {
                 .oldValue(oldStatus)
                 .newValue(newStatus)
                 .build());
+
+        // Notify the reporter that their ticket's status changed.
+        try {
+            notificationService.notifyStatusUpdate(saved, oldStatus, newStatus, changedBy);
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(TicketService.class)
+                    .warn("Could not send status update notification for ticket {}: {}", saved.getId(), e.getMessage());
+        }
 
         return saved;
     }
@@ -104,7 +169,17 @@ public class TicketService {
                 .createdAt(ZonedDateTime.now())
                 .build();
 
-        return commentRepository.save(comment);
+        TicketComment saved = commentRepository.save(comment);
+
+        // Notify the other party (reporter or agent) about the new reply.
+        try {
+            notificationService.notifyNewComment(saved);
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(TicketService.class)
+                    .warn("Could not send comment notification for ticket {}: {}", ticket.getId(), e.getMessage());
+        }
+
+        return saved;
     }
 
     /** Fetch comments for a ticket (internal notes excluded for non-agents via controller). */
@@ -156,6 +231,21 @@ public class TicketService {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    private User resolveReporterByEmail(String email) {
+        if (email != null && !email.isBlank()) {
+            return userRepository.findByEmail(email.trim().toLowerCase())
+                    .orElseGet(() -> userRepository.findByUsername("admin")
+                            .orElseThrow(() -> new ResourceNotFoundException("No reporter resolved and no admin fallback available")));
+        }
+        return userRepository.findByUsername("admin")
+                .orElseThrow(() -> new ResourceNotFoundException("No reporter resolved and no admin fallback available"));
+    }
+
+    private String truncateTitle(String title) {
+        if (title == null) return "Email Request";
+        return title.length() > 200 ? title.substring(0, 200) : title;
+    }
 
     private User resolveReporter(User reporter) {
         // Try by ID first (most reliable)

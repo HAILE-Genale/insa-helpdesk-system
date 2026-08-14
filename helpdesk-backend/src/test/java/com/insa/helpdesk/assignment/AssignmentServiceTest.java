@@ -96,7 +96,7 @@ class AssignmentServiceTest {
         when(ticketRepository.findById(99L)).thenReturn(Optional.empty());
         assertThrows(ResourceNotFoundException.class,
                 () -> assignmentService.assignToAgent(99L, 3L, agent(2L, "admin", true, List.of())));
-        verify(notificationService, never()).notifyAssignment(any(), any(), any());
+        verify(notificationService, never()).notifyAssignment(any(Ticket.class), any(User.class), any(User.class));
     }
 
     @Test
@@ -112,7 +112,7 @@ class AssignmentServiceTest {
 
         // The team is resolved from the routing rule for the category.
         when(routingRuleRepository.findByCategory("Accounts & SSO"))
-                .thenReturn(Optional.of(com.insa.helpdesk.team.entity.TeamRoutingRule.builder().team(team).category("Accounts & SSO").build()));
+                .thenReturn(List.of(com.insa.helpdesk.team.entity.TeamRoutingRule.builder().team(team).category("Accounts & SSO").build()));
 
         assignmentService.autoRouteOnCreate(ticket, agent(2L, "admin", true, List.of()));
 
@@ -131,7 +131,7 @@ class AssignmentServiceTest {
         when(ticketRepository.findByAssigneeId(3L)).thenReturn(List.of(ticket(1L, "a"), ticket(2L, "b")));
         when(ticketRepository.findByAssigneeId(4L)).thenReturn(List.of());
         when(routingRuleRepository.findByCategory("Hardware (General)"))
-                .thenReturn(Optional.of(com.insa.helpdesk.team.entity.TeamRoutingRule.builder().team(team).category("Hardware (General)").build()));
+                .thenReturn(List.of(com.insa.helpdesk.team.entity.TeamRoutingRule.builder().team(team).category("Hardware (General)").build()));
 
         Ticket ticket = ticket(11L, "Hardware (General)");
         assignmentService.autoRouteOnCreate(ticket, agent(2L, "admin", true, List.of()));
@@ -144,7 +144,7 @@ class AssignmentServiceTest {
         SupportTeam defaultTeam = team(9L);
         User agent = agent(5L, "agent5", true, List.of());
         // No routing rule for "Unknown Category".
-        when(routingRuleRepository.findByCategory("Unknown Category")).thenReturn(Optional.empty());
+        when(routingRuleRepository.findByCategory("Unknown Category")).thenReturn(List.of());
         when(teamRepository.findByIsDefaultTrue()).thenReturn(List.of(defaultTeam));
         when(teamMemberRepository.findByTeamId(9L)).thenReturn(List.of(member(defaultTeam, agent)));
         lenient().when(ticketRepository.findByAssigneeId(any())).thenReturn(List.of());
@@ -157,13 +157,13 @@ class AssignmentServiceTest {
 
     @Test
     void autoRoute_noRuleNoDefault_leavesUnassigned() {
-        when(routingRuleRepository.findByCategory("Anything")).thenReturn(Optional.empty());
+        when(routingRuleRepository.findByCategory("Anything")).thenReturn(List.of());
         when(teamRepository.findByIsDefaultTrue()).thenReturn(List.of());
 
         Ticket ticket = ticket(13L, "Anything");
         assignmentService.autoRouteOnCreate(ticket, agent(2L, "admin", true, List.of()));
 
         assertNull(ticket.getAssignee(), "With no rule and no default team, ticket stays unassigned");
-        verify(notificationService, never()).notifyAssignment(any(), any(), any());
+        verify(notificationService, never()).notifyAssignment(any(Ticket.class), any(User.class), any(User.class));
     }
 }

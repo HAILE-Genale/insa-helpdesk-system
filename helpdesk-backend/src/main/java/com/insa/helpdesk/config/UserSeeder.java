@@ -60,7 +60,26 @@ public class UserSeeder implements CommandLineRunner {
     private void seedUser(String username, String email, String password,
                           String roleName, Department dept,
                           List<String> expertise, String logLabel) {
-        if (userRepository.existsByUsername(username)) return;
+        Optional<User> existingUser = userRepository.findByUsername(username);
+        if (existingUser.isPresent()) {
+            User user = existingUser.get();
+            boolean changed = false;
+
+            if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+                user.setPasswordHash(passwordEncoder.encode(password));
+                changed = true;
+            }
+            if (!user.isActive()) {
+                user.setActive(true);
+                changed = true;
+            }
+
+            if (changed) {
+                userRepository.save(user);
+                System.out.println("Updated seeded login: " + username + " / " + password + "  [" + logLabel + "]");
+            }
+            return;
+        }
 
         Optional<Role> roleOpt = roleRepository.findByName(roleName);
         if (roleOpt.isEmpty()) {

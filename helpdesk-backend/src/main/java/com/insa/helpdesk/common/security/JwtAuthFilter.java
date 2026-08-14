@@ -37,7 +37,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
-        String username = jwtService.extractUsername(token);
+
+        String username = null;
+        try {
+            username = jwtService.extractUsername(token);
+        } catch (Exception e) {
+            // Invalid, expired, or malformed token — let the request continue unauthenticated.
+            // Spring Security will then reject it at the next filter if the endpoint requires auth,
+            // and the JwtAuthenticationEntryPoint will return a clean JSON 401 response.
+        }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
