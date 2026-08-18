@@ -50,27 +50,18 @@ public class AssignmentService {
     /** Names of statuses that still count as "open" when measuring agent load. */
     private static final List<String> OPEN_STATUSES = List.of("OPEN", "IN_PROGRESS");
 
-    /**
-     * Route a newly created ticket to the appropriate team and agent based on its
-     * category. Unmatched categories fall back to the default (Tier-1) team. If no
-     * rule and no default team exist, the ticket is left unassigned (creation still
-     * succeeds).
-     */
     @Transactional
     public Ticket autoRouteOnCreate(Ticket ticket, User changedBy) {
         String category = ticket.getCategory();
 
         SupportTeam team = null;
         if (category != null && !category.isBlank()) {
-            // 1. Prefer a specialist team whose routing rule matches the category string.
             List<TeamRoutingRule> rules = routingRuleRepository.findByCategory(category);
             if (!rules.isEmpty()) {
                 team = rules.get(0).getTeam();
             }
 
-            // 2. If no routing rule matched, try finding a team whose name exactly
-            //    matches the category — this is the case when the portal form sends
-            //    the team name directly as the category (user picked a team by name).
+           
             if (team == null) {
                 team = teamRepository.findByName(category).orElse(null);
             }

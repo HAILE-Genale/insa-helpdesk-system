@@ -47,11 +47,15 @@ export function NotificationBell() {
   const [toast, setToast] = useState(null);
 
   const role = user?.role ?? 'portal';
-
   useEffect(() => {
     if (!user) return undefined;
 
     let cancelled = false;
+
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
     setLoading(true);
     Promise.all([getNotifications(10), getUnreadNotificationCount()])
       .then(([listRes, countRes]) => {

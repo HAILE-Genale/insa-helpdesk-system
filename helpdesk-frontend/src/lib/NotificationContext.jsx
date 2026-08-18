@@ -44,6 +44,12 @@ export function NotificationProvider({ children }) {
 
     let cancelled = false;
 
+    // Proactively request browser notification permission so OS-level
+    // notifications appear even if the agent never clicks the bell.
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
     // Load initial notifications
     Promise.all([getNotifications(10), getUnreadNotificationCount()])
       .then(([listRes, countRes]) => {
