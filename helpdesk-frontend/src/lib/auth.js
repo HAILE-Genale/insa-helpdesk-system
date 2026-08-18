@@ -14,8 +14,6 @@ const ROLE_MAP = {
   HELPDESK_MANAGER:   'manager',
   HELPDESK_AGENT:     'agent',
   END_USER:           'portal',
-  DEPARTMENT_MANAGER: 'manager',
-  KNOWLEDGE_MANAGER:  'admin',
 };
 
 function persistUser(safeUser) {

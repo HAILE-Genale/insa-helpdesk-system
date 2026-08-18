@@ -65,20 +65,10 @@ public class RoleSeeder implements CommandLineRunner {
                     .filter(p -> List.of("TICKET_CREATE", "TICKET_VIEW", "TICKET_COMMENT").contains(p.getCode()))
                     .collect(Collectors.toSet());
 
-            Set<Permission> departmentManagerPerms = allPerms.stream()
-                    .filter(p -> List.of("TICKET_VIEW", "REPORTING_VIEW").contains(p.getCode()))
-                    .collect(Collectors.toSet());
-
-            Set<Permission> knowledgeManagerPerms = allPerms.stream()
-                    .filter(p -> List.of("KB_AUTHOR", "KB_PUBLISH").contains(p.getCode()))
-                    .collect(Collectors.toSet());
-
             roleRepository.save(Role.builder().name("SYSTEM_ADMIN").description("System Administrator").permissions(systemAdminPerms).build());
             roleRepository.save(Role.builder().name("HELPDESK_MANAGER").description("Helpdesk Manager").permissions(helpdeskManagerPerms).build());
             roleRepository.save(Role.builder().name("HELPDESK_AGENT").description("Helpdesk Agent").permissions(helpdeskAgentPerms).build());
             roleRepository.save(Role.builder().name("END_USER").description("End User").permissions(endUserPerms).build());
-            roleRepository.save(Role.builder().name("DEPARTMENT_MANAGER").description("Department Manager").permissions(departmentManagerPerms).build());
-            roleRepository.save(Role.builder().name("KNOWLEDGE_MANAGER").description("Knowledge Manager").permissions(knowledgeManagerPerms).build());
         } else {
             // Ensure new permissions exist and are assigned to existing roles.
             ensurePermissionExists("TICKET_VIEW", "View own tickets", allPerms -> allPerms);

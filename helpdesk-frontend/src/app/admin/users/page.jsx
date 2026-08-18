@@ -23,8 +23,6 @@ const BACKEND_ROLES = [
   'HELPDESK_MANAGER',
   'HELPDESK_AGENT',
   'END_USER',
-  'DEPARTMENT_MANAGER',
-  'KNOWLEDGE_MANAGER',
 ];
 
 const ROLE_COLORS = {
@@ -32,8 +30,6 @@ const ROLE_COLORS = {
   HELPDESK_MANAGER:  'bg-violet-50 text-violet-700 border-violet-200',
   HELPDESK_AGENT:    'bg-brand-50 text-brand-700 border-brand-200',
   END_USER:          'bg-slate-50 text-slate-600 border-slate-200',
-  DEPARTMENT_MANAGER:'bg-amber-50 text-amber-700 border-amber-200',
-  KNOWLEDGE_MANAGER: 'bg-emerald-50 text-emerald-700 border-emerald-200',
 };
 
 // ── Tree expertise picker ─────────────────────────────────────────────

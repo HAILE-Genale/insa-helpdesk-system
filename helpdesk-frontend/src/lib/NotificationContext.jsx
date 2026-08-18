@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   getNotifications,
@@ -24,6 +24,32 @@ function ticketHref(notification, role) {
     : `/portal/tickets/${notification.ticketId}`;
 }
 
+const useNotificationPermission = () => {
+  const [permission, setPermission] = useState('default');
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      return;
+    }
+    setPermission(Notification.permission);
+
+    const handler = () => setPermission(Notification.permission);
+    document.addEventListener('notificationpermissionchange', handler);
+    return () => document.removeEventListener('notificationpermissionchange', handler);
+  }, []);
+
+  const requestPermission = useCallback(async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      const perm = await Notification.requestPermission();
+      setPermission(perm);
+      return perm;
+    }
+    return Notification.permission;
+  }, []);
+
+  return { permission, requestPermission };
+};
+
 export function NotificationProvider({ children }) {
   const { user } = useAuth();
   const router = useRouter();
@@ -31,6 +57,7 @@ export function NotificationProvider({ children }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [toast, setToast] = useState(null);
   const toastTimerRef = useRef(null);
+  const { permission: browserPermission, requestPermission } = useNotificationPermission();
 
   const role = user?.role ?? 'portal';
 
@@ -43,12 +70,6 @@ export function NotificationProvider({ children }) {
     }
 
     let cancelled = false;
-
-    // Proactively request browser notification permission so OS-level
-    // notifications appear even if the agent never clicks the bell.
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
 
     // Load initial notifications
     Promise.all([getNotifications(10), getUnreadNotificationCount()])
@@ -131,6 +152,8 @@ export function NotificationProvider({ children }) {
 
   const dismissToast = () => setToast(null);
 
+  const showPermissionPrompt = browserPermission === 'default' && typeof window !== 'undefined' && 'Notification' in window;
+
   return (
     <NotificationContext.Provider value={{
       notifications,
@@ -139,6 +162,9 @@ export function NotificationProvider({ children }) {
       markRead,
       markAllRead,
       dismissToast,
+      notificationPermission: browserPermission,
+      requestNotificationPermission: requestPermission,
+      showNotificationPrompt: showPermissionPrompt,
     }}>
       {children}
     </NotificationContext.Provider>
