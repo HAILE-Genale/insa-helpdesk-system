@@ -190,6 +190,7 @@ function BellWithPrompt({
                           href={ticketHref(notification, role)}
                           onClick={() => {
                             onMarkRead(notification);
+                            onToggle();
                           }}
                           className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold text-brand-700 hover:bg-brand-100"
                         >

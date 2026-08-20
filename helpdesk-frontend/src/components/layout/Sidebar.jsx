@@ -46,8 +46,6 @@ const navigationByRole = {
     { name: 'Categories',       href: '/admin/categories',      icon: 'tag' },
     { name: 'Teams & Routing',  href: '/admin/teams',           icon: 'teams' },
     { name: 'SLA Policies',     href: '/admin/sla-policies',    icon: 'shield' },
-    { name: 'Priority Matrix',  href: '/admin/priority-matrix', icon: 'matrix' },
-    { name: 'Workflows',        href: '/admin/workflows',        icon: 'git-branch' },
     { name: 'Reports',          href: '/admin/reports',          icon: 'chart' },
     { name: 'Audit Logs',       href: '/admin/audit-logs',       icon: 'list' },
   ],
