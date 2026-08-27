@@ -39,9 +39,6 @@ export function NotificationBell() {
     unreadCount,
     markRead: handleMarkReadCtx,
     markAllRead: handleMarkAllReadCtx,
-    notificationPermission,
-    requestNotificationPermission,
-    showNotificationPrompt,
   } = useNotifications();
 
   const role = user?.role ?? 'portal';
@@ -60,11 +57,8 @@ export function NotificationBell() {
     return () => document.removeEventListener('pointerdown', handlePointerDown);
   }, []);
 
-  const handleToggle = async () => {
+  const handleToggle = () => {
     setOpen((current) => !current);
-    if (notificationPermission === 'default') {
-      await requestNotificationPermission();
-    }
   };
 
   const handleMarkRead = (notification) => {
@@ -85,8 +79,6 @@ export function NotificationBell() {
         open={open}
         unreadCount={unreadCount}
         notifications={notifications}
-        notificationPermission={notificationPermission}
-        showNotificationPrompt={showNotificationPrompt}
         onToggle={handleToggle}
         onMarkRead={handleMarkRead}
         onMarkAllRead={handleMarkAllRead}
@@ -101,8 +93,6 @@ function BellWithPrompt({
   open,
   unreadCount,
   notifications,
-  notificationPermission,
-  showNotificationPrompt,
   onToggle,
   onMarkRead,
   onMarkAllRead,
@@ -125,25 +115,6 @@ function BellWithPrompt({
           </span>
         )}
       </button>
-
-      {showNotificationPrompt && (
-        <div className="absolute right-0 mt-3 w-80 rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-xl z-50">
-          <p className="text-xs font-semibold text-amber-800 mb-2">
-            Enable browser notifications to receive OS-level alerts even when this tab is in the background.
-          </p>
-          <button
-            onClick={async () => {
-              const perm = await Notification.requestPermission();
-              if (perm === 'granted') {
-                onToggle();
-              }
-            }}
-            className="text-xs font-bold px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700"
-          >
-            Enable Notifications
-          </button>
-        </div>
-      )}
 
       {open && (
         <div className="absolute right-0 mt-3 w-80 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
