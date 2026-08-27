@@ -4,6 +4,7 @@ services:
     runtime: docker
     plan: free
     dockerfilePath: ./helpdesk-backend/Dockerfile
+    healthCheckPath: /api/health
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -28,19 +29,21 @@ services:
           name: insa-helpdesk-db
           property: password
       - key: JWT_SECRET
-        sync: false
+        value: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
       - key: FRONTEND_BASE_URL
-        sync: false
+        value: http://localhost:3000
       - key: MAIL_HOST
         value: sandbox.smtp.mailtrap.io
       - key: MAIL_PORT
         value: "2525"
       - key: MAIL_USERNAME
-        sync: false
+        value: dev
       - key: MAIL_PASSWORD
-        sync: false
+        value: dev
       - key: MAIL_FROM
         value: noreply@insa-helpdesk.local
+      - key: JAVA_OPTS
+        value: "-Xmx400m -Xms256m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
 
 databases:
   - name: insa-helpdesk-db

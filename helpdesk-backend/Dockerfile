@@ -9,5 +9,6 @@ RUN mvn clean package -Dmaven.test.skip=true
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 COPY --from=build /app/target/helpdesk-backend-0.0.1-SNAPSHOT.jar app.jar
+ENV JAVA_OPTS="-Xmx400m -Xms256m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
 EXPOSE 8085
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
