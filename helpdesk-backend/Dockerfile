@@ -1,8 +1,8 @@
 # Build stage
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
-COPY pom.xml .
-COPY src ./src
+COPY helpdesk-backend/pom.xml .
+COPY helpdesk-backend/src ./src
 RUN mvn clean package -DskipTests
 
 # Run stage
